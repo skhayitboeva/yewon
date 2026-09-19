@@ -1,0 +1,77 @@
+import type { Config } from "@netlify/functions";
+import { COLLECTIONS, KO_COLLATION, coll } from "../lib/db.mts";
+import { requireAuth } from "../lib/auth.mts";
+import { HttpError, handler, json, readJson } from "../lib/http.mts";
+import { parseOrThrow, studentCreateSchema } from "../lib/schema.mts";
+import { buildStudentQuery } from "../lib/query.mts";
+import { EMPTY_ATTENDANCE, EMPTY_TUITION } from "../../shared/domain.ts";
+
+export default handler(async (req) => {
+  await requireAuth(req);
+  const students = await coll(COLLECTIONS.students);
+
+  if (req.method === "GET") {
+    const url = new URL(req.url);
+    const { filter, sort, page, limit } = buildStudentQuery(url);
+
+    const [rows, total] = await Promise.all([
+      students
+        .find(filter)
+        .collation(KO_COLLATION)
+        .sort(sort)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .toArray(),
+      students.countDocuments(filter),
+    ]);
+
+    // Attach consultation counts for the visible page only.
+    const ids = rows.map((r) => r.studentId as string);
+    const consultations = await coll(COLLECTIONS.consultations);
+    const counts = await consultations
+      .aggregate([
+        { $match: { studentId: { $in: ids } } },
+        { $group: { _id: "$studentId", n: { $sum: 1 } } },
+      ])
+      .toArray();
+    const countBy = new Map(counts.map((c) => [c._id as string, c.n as number]));
+
+    return json({
+      rows: rows.map((r) => ({ ...r, consultCount: countBy.get(r.studentId as string) || 0 })),
+      total,
+      page,
+      limit,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    });
+  }
+
+  if (req.method === "POST") {
+    const input = parseOrThrow(studentCreateSchema, await readJson(req));
+
+    const exists = await students.findOne({ studentId: input.studentId });
+    if (exists) throw new HttpError(409, `학번 ${input.studentId} 은(는) 이미 등록되어 있습니다.`);
+
+    const now = new Date();
+    const doc = {
+      ...input,
+      tuition: { ...EMPTY_TUITION, ...(input.tuition || {}) },
+      attendance: { ...EMPTY_ATTENDANCE, ...(input.attendance || {}) },
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    try {
+      const res = await students.insertOne(doc);
+      return json({ ...doc, _id: res.insertedId }, { status: 201 });
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        throw new HttpError(409, `학번 ${input.studentId} 은(는) 이미 등록되어 있습니다.`);
+      }
+      throw err;
+    }
+  }
+
+  throw new HttpError(405, "지원하지 않는 메서드입니다.");
+});
+
+export const config: Config = { path: "/api/students" };

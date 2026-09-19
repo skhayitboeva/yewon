@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --plane: #f9f9f7;
+  --ink: #0b0b0b;
+  --ink2: #52514e;
+  --muted: #898781;
+  --line: #e1e0d9;
+  --rule: #c3c2b7;
+  --brand: #2a78d6;
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--plane);
+  color: var(--ink);
+  font-family:
+    Pretendard, system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo",
+    "Malgun Gothic", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-line bg-surface;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-line
+      bg-surface px-3 py-1.5 text-sm font-semibold text-ink2 transition
+      hover:bg-plane disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-transparent bg-brand text-white hover:bg-brandDark;
+  }
+  .btn-danger {
+    @apply border-transparent bg-critical text-white hover:opacity-90;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-ink
+      outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20;
+  }
+
+  .label {
+    @apply mb-1 block text-xs font-bold text-ink2;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold;
+  }
+}
+
+/* Tabular figures keep the money columns aligned. */
+.nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Table chrome */
+.sticky-col {
+  position: sticky;
+  background: inherit;
+  z-index: 2;
+}
+
+::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d6d5cd;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
