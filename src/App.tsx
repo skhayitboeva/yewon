@@ -11,7 +11,8 @@ import { Profile } from "./components/Profile";
 import { Notifications } from "./components/Notifications";
 import { Toasts } from "./components/Toast";
 import { useToasts } from "./hooks";
-import { useLang } from "./i18n";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import type { Role } from "../shared/domain";
 
 type Tab = "dashboard" | "students" | "details" | "profile" | "info" | "notifications";
@@ -22,13 +23,13 @@ const TABS_BY_ROLE: Record<Role, { tabs: Tab[]; default: Tab }> = {
   user: { tabs: ["details", "profile", "info"], default: "details" },
 };
 
-const TAB_LABELS: Record<Tab, string> = {
-  dashboard: "대시보드",
-  students: "전체 학생",
-  details: "내 정보",
-  profile: "프로필",
-  info: "안내",
-  notifications: "알림",
+const TAB_KEYS: Record<Tab, string> = {
+  dashboard: "tabs.dashboard",
+  students: "tabs.students",
+  details: "tabs.details",
+  profile: "tabs.profile",
+  info: "tabs.info",
+  notifications: "tabs.notifications",
 };
 
 export default function App() {
@@ -39,7 +40,7 @@ export default function App() {
   const [tableKey, setTableKey] = useState(0);
   const { toasts, push, dismiss } = useToasts();
   const qc = useQueryClient();
-  const { lang, t, toggle } = useLang();
+  const { t } = useTranslation("common");
 
   async function refreshAuth() {
     try {
@@ -74,7 +75,7 @@ export default function App() {
   }, []);
 
   if (authed === null) {
-    return <p className="p-10 text-center text-sm text-muted">{t("확인 중…")}</p>;
+    return <p className="p-10 text-center text-sm text-muted">{t("states.loading")}</p>;
   }
 
   if (!authed) {
@@ -134,24 +135,16 @@ export default function App() {
       <header className="bg-[#243b53] px-5 py-4 text-white sm:px-7">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
           <div>
-            <h1 className="text-lg font-bold">{t("예원예술대학교 유학생 관리 시스템")} (Uzbekistan)</h1>
-            <p className="mt-0.5 text-xs text-white/70">
-              {t("학부 · 대학원 | 학적 · 등록금 · 출결 · 상담 통합 관리")}
-            </p>
+            <h1 className="text-lg font-bold">{t("header.title")} (Uzbekistan)</h1>
+            <p className="mt-0.5 text-xs text-white/70">{t("header.subtitle")}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <button
-              onClick={toggle}
-              title={lang === "ko" ? "Switch to English" : "한국어로 전환"}
-              className="rounded-lg border border-white/30 px-3 py-1.5 text-sm font-semibold hover:bg-white/10"
-            >
-              {lang === "ko" ? "EN" : "한국어"}
-            </button>
+            <LanguageSwitcher className="border border-white/30 bg-transparent text-white hover:bg-white/10" />
             <button
               onClick={logout}
               className="rounded-lg border border-white/30 px-3 py-1.5 text-sm font-semibold hover:bg-white/10"
             >
-              {t("로그아웃")}
+              {t("header.logout")}
             </button>
           </div>
         </div>
@@ -161,7 +154,7 @@ export default function App() {
         <div className="mx-auto flex max-w-[1500px] gap-1.5">
           {roleTabs?.tabs.map((tb) => (
             <button key={tb} className={tabClass(tb)} onClick={() => setTab(tb)}>
-              {t(TAB_LABELS[tb])}
+              {t(TAB_KEYS[tb])}
             </button>
           ))}
         </div>

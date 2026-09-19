@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   TUITION_STATUSES,
   formatKRW,
@@ -6,7 +7,7 @@ import {
   type Tuition,
   type TuitionStatus,
 } from "../../shared/domain";
-import { useLang } from "../i18n";
+import { useDomainLabel } from "../i18n/domainLabels";
 
 const STATUS_CHIP: Record<string, string> = {
   완납: "bg-[#e8f7e8] text-[#0a7d0a]",
@@ -42,7 +43,8 @@ export function TuitionCell({
   onSave: (patch: Partial<Tuition>) => void;
   readOnly?: boolean;
 }) {
-  const { lang, t } = useLang();
+  const { t } = useTranslation(["modals", "common"]);
+  const domain = useDomainLabel();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Tuition>(tuition);
   /** Once staff manually pick a status, stop auto-suggesting it for the rest of this edit. */
@@ -93,7 +95,7 @@ export function TuitionCell({
   const closedBody = (
     <>
       <span className={`chip shrink-0 ${STATUS_CHIP[tuition?.status] ?? "bg-plane text-ink2"}`}>
-        {t(tuition?.status ?? "미납")}
+        {domain.tuitionStatus(tuition?.status ?? "미납")}
       </span>
       <span className="nums truncate text-xs text-ink2">
         {formatKRW(paid)} / {formatKRW(tuition?.total)}
@@ -114,7 +116,7 @@ export function TuitionCell({
       <button
         type="button"
         onClick={start}
-        title={t("클릭하여 수정")}
+        title={t("common:states.clickToEdit")}
         className="-mx-1 flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-[#eef3fa]"
       >
         {closedBody}
@@ -128,11 +130,9 @@ export function TuitionCell({
       className="absolute right-2 z-20 mt-1 w-64 rounded-xl border border-line bg-surface p-3 shadow-xl"
     >
       <label className="label flex items-center justify-between">
-        <span>{t("상태")}</span>
+        <span>{t("modals:tuition.statusLabel")}</span>
         {!statusOverridden && (
-          <span className="text-[10px] font-normal text-muted">
-            {lang === "en" ? "auto" : "자동"}
-          </span>
+          <span className="text-[10px] font-normal text-muted">{t("modals:tuition.autoBadge")}</span>
         )}
       </label>
       <select
@@ -145,12 +145,12 @@ export function TuitionCell({
       >
         {TUITION_STATUSES.map((s) => (
           <option key={s} value={s}>
-            {t(s)}
+            {domain.tuitionStatus(s)}
           </option>
         ))}
       </select>
 
-      <label className="label mt-2.5">{t("총액 (원)")}</label>
+      <label className="label mt-2.5">{t("modals:tuition.totalLabel")}</label>
       <input
         className="field nums text-right"
         inputMode="numeric"
@@ -163,7 +163,7 @@ export function TuitionCell({
           const key = `term${n}` as const;
           return (
             <div key={n}>
-              <label className="label">{lang === "en" ? `Term ${n}` : `${n}차`}</label>
+              <label className="label">{t("modals:tuition.termLabel", { n })}</label>
               <input
                 className={`field nums text-right ${overTotal ? "!border-critical" : ""}`}
                 inputMode="numeric"
@@ -175,7 +175,7 @@ export function TuitionCell({
         })}
       </div>
 
-      <label className="label mt-2.5">{t("비고")}</label>
+      <label className="label mt-2.5">{t("modals:tuition.noteLabel")}</label>
       <input
         className="field"
         value={draft.note ?? ""}
@@ -183,29 +183,25 @@ export function TuitionCell({
       />
 
       <p className="nums mt-2 text-xs text-muted">
-        {lang === "en" ? `Total paid ${formatKRW(draftPaid)} won` : `납부 합계 ${formatKRW(draftPaid)}원`}
+        {t("modals:tuition.totalPaid", { amount: formatKRW(draftPaid) })}
         {underTotal && (
           <span className="ml-1 font-semibold text-[#8a6100]">
-            {lang === "en"
-              ? ` · ${formatKRW(draft.total - draftPaid)} won short of total`
-              : ` · 총액보다 ${formatKRW(draft.total - draftPaid)}원 부족`}
+            {t("modals:tuition.shortOfTotal", { amount: formatKRW(draft.total - draftPaid) })}
           </span>
         )}
       </p>
       {overTotal && (
         <p role="alert" className="mt-1 text-xs font-semibold text-critical">
-          {lang === "en"
-            ? `Term payments exceed the total by ${formatKRW(draftPaid - draft.total)} won.`
-            : `분할 납부 합계가 총액보다 ${formatKRW(draftPaid - draft.total)}원 많습니다.`}
+          {t("modals:tuition.overTotal", { amount: formatKRW(draftPaid - draft.total) })}
         </p>
       )}
 
       <div className="mt-3 flex justify-end gap-2">
         <button className="btn" onClick={() => setOpen(false)}>
-          {t("취소")}
+          {t("common:actions.cancel")}
         </button>
         <button className="btn btn-primary" onClick={save} disabled={overTotal}>
-          {t("저장")}
+          {t("common:actions.save")}
         </button>
       </div>
     </div>

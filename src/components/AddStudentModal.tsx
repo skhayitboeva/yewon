@@ -1,7 +1,9 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal } from "./Modal";
 import { api, ApiError } from "../api";
-import { useLang } from "../i18n";
+import { tError } from "../i18n";
+import { useDomainLabel } from "../i18n/domainLabels";
 import {
   ADMISSION_TYPES,
   ENROLL_STATUSES,
@@ -67,7 +69,8 @@ export function AddStudentModal({
   const [form, setForm] = useState<Record<string, any>>(BLANK);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const { lang, t, tLevel } = useLang();
+  const { t } = useTranslation(["modals", "students", "common"]);
+  const domain = useDomainLabel();
 
   const set = (key: string) => (e: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -99,106 +102,106 @@ export function AddStudentModal({
 
   return (
     <Modal
-      title={t("학생 추가")}
-      subtitle={t("학번과 성명은 필수입니다. 나머지는 나중에 표에서 채울 수 있습니다.")}
+      title={t("modals:addStudent.title")}
+      subtitle={t("modals:addStudent.subtitle")}
       onClose={onClose}
       footer={
         <>
           <button className="btn" onClick={onClose} type="button">
-            {t("취소")}
+            {t("common:actions.cancel")}
           </button>
           <button className="btn btn-primary" onClick={submit} disabled={busy} type="button">
-            {busy ? t("저장 중…") : t("추가")}
+            {busy ? "Loading…" : t("common:actions.add")}
           </button>
         </>
       }
     >
       <form onSubmit={submit} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Field label={`${t("학번")} *`}>
+        <Field label={`${t("students:columns.studentId")} *`}>
           <input className="field" value={form.studentId} onChange={set("studentId")} autoFocus />
         </Field>
-        <Field label={`${t("성명")} *`}>
+        <Field label={`${t("students:columns.nameKo")} *`}>
           <input className="field" value={form.nameKo} onChange={set("nameKo")} />
         </Field>
-        <Field label={t("성명(영문)")}>
+        <Field label={t("students:columns.nameEn")}>
           <input className="field" value={form.nameEn} onChange={set("nameEn")} />
         </Field>
 
-        <Field label={t("구분")}>
+        <Field label={t("students:columns.level")}>
           <select className="field" value={form.level} onChange={set("level")}>
             {LEVELS.map((l) => (
               <option key={l} value={l}>
-                {tLevel(l)}
+                {domain.level(l)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label={t("신입/재학")}>
+        <Field label={t("students:columns.studentType")}>
           <select className="field" value={form.studentType} onChange={set("studentType")}>
             {STUDENT_TYPES.map((v) => (
               <option key={v} value={v}>
-                {t(v)}
+                {domain.studentType(v)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label={t("학적")}>
+        <Field label={t("students:columns.enrollStatus")}>
           <select className="field" value={form.enrollStatus} onChange={set("enrollStatus")}>
             {/* "삭제" doesn't make sense for a brand-new student — it's only reachable via the table's delete button. */}
             {ENROLL_STATUSES.filter((s) => s !== "삭제").map((s) => (
               <option key={s} value={s}>
-                {t(s)}
+                {domain.enrollStatus(s)}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field label={t("생년월일")}>
+        <Field label={t("students:columns.birthDate")}>
           <input type="date" className="field" value={form.birthDate} onChange={set("birthDate")} />
         </Field>
-        <Field label={t("성별")}>
+        <Field label={t("students:columns.gender")}>
           <select className="field" value={form.gender} onChange={set("gender")}>
             <option value="">—</option>
             {GENDERS.map((g) => (
               <option key={g} value={g}>
-                {t(g)}
+                {domain.gender(g)}
               </option>
             ))}
           </select>
         </Field>
-        <Field label={t("국적")}>
+        <Field label={t("modals:addStudent.nationalityLabel")}>
           <input className="field" value={form.nationality} onChange={set("nationality")} />
         </Field>
 
         {isGrad ? (
           <>
-            <Field label={lang === "en" ? "Graduate School" : "대학원"}>
+            <Field label={t("modals:addStudent.gradSchoolLabel")}>
               <input className="field" value={form.gradSchool} onChange={set("gradSchool")} />
             </Field>
-            <Field label={t("과정")}>
+            <Field label={t("students:columns.course")}>
               <select className="field" value={form.course} onChange={set("course")}>
                 <option value="">—</option>
-                <option value="석사과정">{t("석사과정")}</option>
-                <option value="박사과정">{t("박사과정")}</option>
+                <option value="석사과정">{domain.course("석사과정")}</option>
+                <option value="박사과정">{domain.course("박사과정")}</option>
               </select>
             </Field>
-            <Field label={t("학기차")}>
+            <Field label={t("students:columns.semesterNo")}>
               <input className="field" value={form.semesterNo} onChange={set("semesterNo")} />
             </Field>
           </>
         ) : (
           <>
-            <Field label={lang === "en" ? "Faculty" : "학부"}>
+            <Field label={t("modals:addStudent.facultyLabel")}>
               <input className="field" value={form.faculty} onChange={set("faculty")} />
             </Field>
-            <Field label={t("학년")}>
+            <Field label={t("students:columns.grade")}>
               <input className="field" value={form.grade} onChange={set("grade")} />
             </Field>
-            <Field label={t("입학구분")}>
+            <Field label={t("students:columns.admissionType")}>
               <select className="field" value={form.admissionType} onChange={set("admissionType")}>
                 {ADMISSION_TYPES.map((a) => (
                   <option key={a} value={a}>
-                    {t(a)}
+                    {domain.admissionType(a)}
                   </option>
                 ))}
               </select>
@@ -206,10 +209,10 @@ export function AddStudentModal({
           </>
         )}
 
-        <Field label={t("전공")} span={isGrad ? 2 : 1}>
+        <Field label={t("students:columns.major")} span={isGrad ? 2 : 1}>
           <input className="field" value={form.major} onChange={set("major")} />
         </Field>
-        <Field label={t("입학일자")}>
+        <Field label={t("students:columns.admissionDate")}>
           <input
             type="date"
             className="field"
@@ -218,21 +221,21 @@ export function AddStudentModal({
           />
         </Field>
 
-        <Field label={t("주소")} span={3}>
+        <Field label={t("students:columns.address")} span={3}>
           <input className="field" value={form.address} onChange={set("address")} />
         </Field>
 
-        <Field label={t("휴대전화")}>
+        <Field label={t("students:columns.mobile")}>
           <input className="field" inputMode="numeric" value={form.mobile} onChange={setPhone("mobile")} />
         </Field>
-        <Field label={t("전화번호")}>
+        <Field label={t("students:columns.phone")}>
           <input className="field" inputMode="numeric" value={form.phone} onChange={setPhone("phone")} />
         </Field>
-        <Field label={t("이메일")}>
+        <Field label={t("students:columns.email")}>
           <input className="field" value={form.email} onChange={set("email")} />
         </Field>
 
-        <Field label={t("메모")} span={3}>
+        <Field label={t("students:columns.memo")} span={3}>
           <textarea
             className="field min-h-[72px]"
             value={form.memo}
@@ -242,7 +245,7 @@ export function AddStudentModal({
 
         {error && (
           <p role="alert" className="sm:col-span-3 text-sm font-semibold text-critical">
-            {t(error)}
+            {tError(error)}
           </p>
         )}
       </form>

@@ -1,0 +1,45 @@
+{
+  "actions": {
+    "cancel": "Bekor qilish",
+    "save": "Saqlash",
+    "delete": "O'chirish",
+    "edit": "Tahrirlash",
+    "add": "Qo'shish",
+    "close": "Yopish",
+    "search": "Qidirish",
+    "previous": "Oldingi",
+    "next": "Keyingi",
+    "clearSelection": "Tanlovni bekor qilish",
+    "clearFilters": "Filtrlarni tozalash",
+    "login": "Kirish",
+    "back": "Orqaga"
+  },
+  "filters": {
+    "all": "Barchasi"
+  },
+  "fields": {
+    "password": "Parol",
+    "default": "Standart"
+  },
+  "states": {
+    "loading": "Yuklanmoqda…",
+    "clickToEdit": "Tahrirlash uchun bosing"
+  },
+  "header": {
+    "title": "Yewon universiteti chet ellik talabalarni boshqarish tizimi",
+    "subtitle": "Bakalavriat · Magistratura | O'quv jarayoni, kontrakt, davomat va maslahat boshqaruvi",
+    "logout": "Chiqish"
+  },
+  "tabs": {
+    "dashboard": "Boshqaruv paneli",
+    "students": "Barcha talabalar",
+    "details": "Mening ma'lumotlarim",
+    "profile": "Profil",
+    "info": "Ma'lumot",
+    "notifications": "Bildirishnomalar"
+  },
+  "units": {
+    "students": " kishi",
+    "records": " ta"
+  }
+}

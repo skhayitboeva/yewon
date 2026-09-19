@@ -1,0 +1,12 @@
+{
+  "searchPlaceholder": "Talaba raqami · Ism · Inglizcha ism · Aloqa",
+  "level": { "label": "Bosqich", "all": "Barcha bosqichlar" },
+  "studentType": { "label": "Yangi/Davomchi", "all": "Barchasi (yangi/davomchi)" },
+  "major": { "label": "Mutaxassislik", "all": "Barcha mutaxassisliklar" },
+  "enrollStatus": { "label": "O'quv holati", "all": "Barcha o'quv holatlari" },
+  "tuitionStatus": { "label": "Kontrakt", "all": "Barcha kontrakt holatlari" },
+  "term": { "label": "To'lov muddati", "all": "Barcha muddatlar", "paid": "{{n}}-muddat to'langan" },
+  "attendance": { "label": "Davomat", "all": "Barcha davomat holatlari" },
+  "cohort": { "label": "Qabul kogortasi", "all": "Barcha kogortalar" },
+  "exportCsv": "CSV eksport qilish"
+}

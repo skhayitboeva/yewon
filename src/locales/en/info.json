@@ -1,0 +1,16 @@
+{
+  "banner": "This information can only be entered or edited by an administrator. Other users can view it only.",
+  "title": "Info",
+  "fields": {
+    "tuitionDeadline": "Tuition Fee Deadline",
+    "classTimeUndergraduate": "Undergraduate Class Day & Time",
+    "classTimeGraduate": "Graduate Class Day & Time",
+    "visaApplicationTime": "Visa Application Time",
+    "orientation": "Orientation"
+  },
+  "itemTitlePlaceholder": "Title",
+  "addItem": "Add item",
+  "notSet": "Not set",
+  "savedToast": "Info saved.",
+  "loading": "Loading…"
+}

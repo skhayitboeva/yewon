@@ -1,0 +1,38 @@
+{
+  "level": { "undergraduate": "Undergraduate", "graduate": "Graduate" },
+  "studentType": { "new": "New student", "continuing": "Continuing student" },
+  "gender": { "male": "Male", "female": "Female" },
+  "enrollStatus": {
+    "enrolled": "Enrolled",
+    "leave": "Leave of absence",
+    "reinstated": "Reinstated",
+    "dismissed": "Dismissed",
+    "graduated": "Graduated",
+    "withdrawn": "Withdrawn",
+    "deleted": "Deleted"
+  },
+  "admissionType": { "new": "New admission", "transfer": "Transfer admission", "readmission": "Readmission" },
+  "course": { "none": "N/A", "masters": "Master's course", "doctoral": "Doctoral course" },
+  "tuitionStatus": { "paidInFull": "Paid in full", "partial": "Partially paid", "unpaid": "Unpaid" },
+  "consultCategory": {
+    "tuition": "Tuition",
+    "attendance": "Attendance",
+    "visa": "Visa",
+    "academic": "Academic (incl. attendance)",
+    "urgent": "Urgent",
+    "other": "Other"
+  },
+  "consultMethod": {
+    "inPerson": "In person",
+    "phone": "Phone",
+    "kakaoTalk": "KakaoTalk",
+    "email": "Email",
+    "other": "Other"
+  },
+  "absenceBucket": {
+    "good": "Good (0)",
+    "a1": "1 absence",
+    "a23": "2–3 absences",
+    "a4": "4+ absences (F risk)"
+  }
+}

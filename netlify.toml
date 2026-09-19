@@ -19,6 +19,16 @@
   node_bundler = "esbuild"
   directory = "netlify/functions"
 
+# Pin the local dev wiring instead of letting framework auto-detection pick a
+# command — `npm run dev` is itself `netlify dev`, which detection can choose
+# and recurse into. `#custom` means "use exactly this command".
+[dev]
+  command = "npm run dev:vite"
+  framework = "#custom"
+  targetPort = 5173
+  port = 8888
+  autoLaunch = false
+
 # SPA fallback — must come after the function paths, which Netlify Functions v2
 # registers itself via each function's `config.path`.
 [[redirects]]

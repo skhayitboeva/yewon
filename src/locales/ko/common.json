@@ -1,0 +1,45 @@
+{
+  "actions": {
+    "cancel": "취소",
+    "save": "저장",
+    "delete": "삭제",
+    "edit": "수정",
+    "add": "추가",
+    "close": "닫기",
+    "search": "검색",
+    "previous": "이전",
+    "next": "다음",
+    "clearSelection": "선택 해제",
+    "clearFilters": "필터 해제",
+    "login": "로그인",
+    "back": "뒤로"
+  },
+  "filters": {
+    "all": "전체"
+  },
+  "fields": {
+    "password": "비밀번호",
+    "default": "기본값"
+  },
+  "states": {
+    "loading": "불러오는 중…",
+    "clickToEdit": "클릭하여 수정"
+  },
+  "header": {
+    "title": "예원예술대학교 유학생 관리 시스템",
+    "subtitle": "학부 · 대학원 | 학적 · 등록금 · 출결 · 상담 통합 관리",
+    "logout": "로그아웃"
+  },
+  "tabs": {
+    "dashboard": "대시보드",
+    "students": "전체 학생",
+    "details": "내 정보",
+    "profile": "프로필",
+    "info": "안내",
+    "notifications": "알림"
+  },
+  "units": {
+    "students": "명",
+    "records": "건"
+  }
+}

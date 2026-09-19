@@ -1,0 +1,38 @@
+{
+  "sections": {
+    "allStudents": "All Students",
+    "allStudentsNote": "Click a card to open the filtered student list",
+    "tuition": "Tuition",
+    "attendance": "Attendance",
+    "consultations": "Consultations",
+    "consultationsNote": "Record count by category (one record may span multiple categories)"
+  },
+  "cards": {
+    "allStudentsLabel": "All Students",
+    "undergradContinuing": "Undergraduate · Continuing",
+    "undergradNew": "Undergraduate · New ({{semester}})",
+    "gradContinuing": "Graduate · Continuing",
+    "gradNew": "Graduate · New ({{semester}})",
+    "semesterLabel": "{{year}}-{{term}} semester"
+  },
+  "tuition": {
+    "billed": "Billed",
+    "collected": "Collected",
+    "outstanding": "Outstanding",
+    "won": "{{amount}} won",
+    "ofTotal": "{{percent}}% of total",
+    "paymentStatus": "Payment Status",
+    "partialNote": "Among partially-paid students",
+    "termPayment": "Term {{n}} payment"
+  },
+  "attendance": {
+    "status": "Attendance Status",
+    "urgentNote": "4+ absences need immediate consultation"
+  },
+  "consult": {
+    "recent": "Recent Consultations",
+    "noRecords": "No records."
+  },
+  "loadError": "Failed to load the dashboard stats.",
+  "loading": "Loading…"
+}

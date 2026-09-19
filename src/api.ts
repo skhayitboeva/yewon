@@ -7,7 +7,7 @@ import type {
   Stats,
   Student,
 } from "../shared/domain";
-import { getLang, translate } from "./i18n";
+import { tError } from "./i18n";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -44,11 +44,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    let message =
-      getLang() === "en" ? `Request failed (${res.status})` : `요청이 실패했습니다 (${res.status})`;
+    let message = tError("요청이 실패했습니다", { status: res.status });
     try {
       const body = await res.json();
-      if (body?.error) message = translate(body.error);
+      if (body?.error) message = tError(body.error);
     } catch {
       /* non-JSON error body */
     }

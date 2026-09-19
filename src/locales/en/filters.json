@@ -1,0 +1,12 @@
+{
+  "searchPlaceholder": "Student ID · Name · English name · Contact",
+  "level": { "label": "Level", "all": "All levels" },
+  "studentType": { "label": "New/Continuing", "all": "All (new/continuing)" },
+  "major": { "label": "Major", "all": "All majors" },
+  "enrollStatus": { "label": "Enrollment", "all": "All enrollment statuses" },
+  "tuitionStatus": { "label": "Tuition", "all": "All tuition statuses" },
+  "term": { "label": "Payment term", "all": "All terms", "paid": "Term {{n}} paid" },
+  "attendance": { "label": "Attendance", "all": "All attendance" },
+  "cohort": { "label": "Admission cohort", "all": "All cohorts" },
+  "exportCsv": "Export CSV"
+}

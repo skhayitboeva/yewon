@@ -1,0 +1,20 @@
+{
+  "title": "Profile",
+  "roleLabel": "Role",
+  "roleAdmin": "Admin",
+  "roleManager": "Manager",
+  "staffPasswordNotice": "Staff account passwords are managed via server environment configuration and cannot be changed here.",
+  "nameLabel": "Name",
+  "addressLabel": "Address",
+  "mobileLabel": "Mobile phone number",
+  "newPasswordLabel": "New password",
+  "newPasswordPlaceholder": "Leave blank to keep unchanged",
+  "currentPasswordLabel": "Current password",
+  "currentPasswordHint": "Changing your phone number or password requires your current password.",
+  "savedToast": "Profile saved.",
+  "loading": "Loading…",
+  "academicInfo": "Academic Info",
+  "consultHistory": "Consultation History",
+  "consultCount": "Consultations",
+  "lastConsulted": "Last consulted"
+}

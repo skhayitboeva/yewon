@@ -80,11 +80,25 @@ npm run seed
 
 ```bash
 npm i -g netlify-cli   # 최초 1회
-netlify dev
+
+./run.sh start     # 프론트엔드 + 백엔드 함께 백그라운드로 기동
+./run.sh stop      # 종료
+./run.sh restart
+./run.sh status    # 실행 상태 · 포트 · 응답 확인
+./run.sh logs      # 로그 실시간 보기 (Ctrl+C 로 나가도 서버는 계속 실행)
 ```
 
-<http://localhost:8888> 에서 열립니다. `netlify dev` 가 Vite와 Functions를
-같이 띄우고 `/api/*` 를 연결합니다.
+`npm run start` / `npm run stop` 으로도 같습니다.
+
+<http://localhost:8888> 에서 열립니다. `netlify dev` 한 프로세스가 Vite(5173)를
+자식으로 띄우고 8888에서 `/api/*` 와 함께 서빙합니다. `stop` 은 자식 Vite 까지
+정리하므로 포트가 물린 채 남지 않습니다.
+
+로그는 `.dev/dev.log`, PID는 `.dev/dev.pid` 에 쌓입니다(git 추적 제외).
+포그라운드로 직접 보고 싶으면 기존처럼 `netlify dev` 를 그대로 써도 됩니다.
+
+> ⚠️ **로컬도 `.env` 의 MongoDB Atlas 를 그대로 씁니다 — Netlify 배포본과 같은 DB입니다.**
+> 로컬에서 고치거나 지운 데이터가 실제 운영 데이터에 그대로 반영됩니다.
 
 ## 7. Netlify 배포
 

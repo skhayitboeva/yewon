@@ -1,0 +1,27 @@
+{
+  "accessRequests": {
+    "title": "Access Requests",
+    "loading": "Loading…",
+    "empty": "No pending requests.",
+    "noMatch": "No matching student found.",
+    "selectStudent": "Select a student to link",
+    "noPhone": "No phone on file",
+    "selectStudentRequired": "Select a student to link.",
+    "approvedToast": "Approved.",
+    "rejectedToast": "Rejected.",
+    "rejectButton": "Reject",
+    "approveButton": "Approve"
+  },
+  "broadcast": {
+    "title": "Send Telegram Notification",
+    "levelLabel": "Level",
+    "enrollStatusLabel": "Enrollment",
+    "messageLabel": "Message",
+    "messageRequired": "Enter a message.",
+    "sentCount": "Sent",
+    "failedCount": "Failed",
+    "sendButton": "Send via Telegram",
+    "telegramOnlyNote": "Only sent to students who have linked Telegram.",
+    "completedToast": "Send complete."
+  }
+}

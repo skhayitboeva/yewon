@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api, ApiError } from "../api";
-import { useLang } from "../i18n";
+import { tError } from "../i18n";
+import { useDomainLabel } from "../i18n/domainLabels";
 import { ENROLL_STATUSES, LEVELS } from "../../shared/domain";
 
 export function Notifications({
@@ -22,7 +24,7 @@ function AccessRequestQueue({
 }: {
   onToast: (kind: "ok" | "error", text: string) => void;
 }) {
-  const { t } = useLang();
+  const { t } = useTranslation(["notifications", "common"]);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["accessRequests"], queryFn: api.accessRequests });
   const [selected, setSelected] = useState<Record<string, string>>({});
@@ -30,26 +32,26 @@ function AccessRequestQueue({
   async function approve(id: string) {
     const targetId = selected[id];
     if (!targetId) {
-      onToast("error", t("연결할 학생을 선택하세요."));
+      onToast("error", t("notifications:accessRequests.selectStudentRequired"));
       return;
     }
     try {
       await api.resolveAccessRequest(id, { action: "approve", targetId });
-      onToast("ok", t("승인했습니다."));
+      onToast("ok", t("notifications:accessRequests.approvedToast"));
       qc.invalidateQueries({ queryKey: ["accessRequests"] });
       qc.invalidateQueries({ queryKey: ["students"] });
     } catch (err) {
-      onToast("error", err instanceof ApiError ? t(err.message) : t("처리에 실패했습니다."));
+      onToast("error", err instanceof ApiError ? tError(err.message) : tError("처리에 실패했습니다."));
     }
   }
 
   async function reject(id: string) {
     try {
       await api.resolveAccessRequest(id, { action: "reject" });
-      onToast("ok", t("거절했습니다."));
+      onToast("ok", t("notifications:accessRequests.rejectedToast"));
       qc.invalidateQueries({ queryKey: ["accessRequests"] });
     } catch (err) {
-      onToast("error", err instanceof ApiError ? t(err.message) : t("처리에 실패했습니다."));
+      onToast("error", err instanceof ApiError ? tError(err.message) : tError("처리에 실패했습니다."));
     }
   }
 
@@ -58,7 +60,7 @@ function AccessRequestQueue({
   return (
     <div className="card p-4">
       <h3 className="mb-3 flex items-center gap-2 text-sm font-bold">
-        {t("접속 요청")}
+        {t("notifications:accessRequests.title")}
         {requests.length > 0 && (
           <span className="nums rounded-full bg-brand px-1.5 text-[10px] font-bold text-white">
             {requests.length}
@@ -66,9 +68,9 @@ function AccessRequestQueue({
         )}
       </h3>
       {isLoading ? (
-        <p className="text-sm text-muted">{t("불러오는 중…")}</p>
+        <p className="text-sm text-muted">{t("common:states.loading")}</p>
       ) : requests.length === 0 ? (
-        <p className="text-sm text-muted">{t("대기 중인 요청이 없습니다.")}</p>
+        <p className="text-sm text-muted">{t("notifications:accessRequests.empty")}</p>
       ) : (
         <ul className="space-y-3">
           {requests.map((r) => (
@@ -80,17 +82,17 @@ function AccessRequestQueue({
               </div>
 
               {r.candidates.length === 0 ? (
-                <p className="mt-2 text-xs text-critical">{t("일치하는 학생을 찾지 못했습니다.")}</p>
+                <p className="mt-2 text-xs text-critical">{t("notifications:accessRequests.noMatch")}</p>
               ) : (
                 <select
                   className="field mt-2"
                   value={selected[r._id] ?? ""}
                   onChange={(e) => setSelected((prev) => ({ ...prev, [r._id]: e.target.value }))}
                 >
-                  <option value="">{t("연결할 학생 선택")}</option>
+                  <option value="">{t("notifications:accessRequests.selectStudent")}</option>
                   {r.candidates.map((c) => (
                     <option key={c._id} value={c._id}>
-                      {c.studentId} · {c.nameKo} ({c.mobile || t("전화번호 없음")})
+                      {c.studentId} · {c.nameKo} ({c.mobile || t("notifications:accessRequests.noPhone")})
                     </option>
                   ))}
                 </select>
@@ -98,14 +100,14 @@ function AccessRequestQueue({
 
               <div className="mt-2 flex justify-end gap-2">
                 <button className="btn px-2 py-1 text-xs" onClick={() => reject(r._id)}>
-                  {t("거절")}
+                  {t("notifications:accessRequests.rejectButton")}
                 </button>
                 <button
                   className="btn btn-primary px-2 py-1 text-xs"
                   disabled={r.candidates.length === 0}
                   onClick={() => approve(r._id)}
                 >
-                  {t("승인")}
+                  {t("notifications:accessRequests.approveButton")}
                 </button>
               </div>
             </li>
@@ -121,7 +123,8 @@ function BroadcastComposer({
 }: {
   onToast: (kind: "ok" | "error", text: string) => void;
 }) {
-  const { t, tLevel, tEnrollStatus } = useLang();
+  const { t } = useTranslation(["notifications", "common"]);
+  const domain = useDomainLabel();
   const [message, setMessage] = useState("");
   const [level, setLevel] = useState("");
   const [enrollStatus, setEnrollStatus] = useState("");
@@ -131,7 +134,7 @@ function BroadcastComposer({
   async function send() {
     const text = message.trim();
     if (!text) {
-      onToast("error", t("메시지를 입력하세요."));
+      onToast("error", t("notifications:broadcast.messageRequired"));
       return;
     }
 
@@ -152,10 +155,10 @@ function BroadcastComposer({
         setProgress({ sent: totalSent, failed: totalFailed });
         cursor = r.nextCursor ?? undefined;
       } while (cursor);
-      onToast("ok", t("발송을 완료했습니다."));
+      onToast("ok", t("notifications:broadcast.completedToast"));
       setMessage("");
     } catch (err) {
-      onToast("error", err instanceof ApiError ? t(err.message) : t("발송에 실패했습니다."));
+      onToast("error", err instanceof ApiError ? tError(err.message) : tError("발송에 실패했습니다."));
     } finally {
       setBusy(false);
     }
@@ -163,34 +166,34 @@ function BroadcastComposer({
 
   return (
     <div className="card p-4">
-      <h3 className="mb-3 text-sm font-bold">{t("텔레그램 알림 보내기")}</h3>
+      <h3 className="mb-3 text-sm font-bold">{t("notifications:broadcast.title")}</h3>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
-          <label className="label">{t("구분")}</label>
+          <label className="label">{t("notifications:broadcast.levelLabel")}</label>
           <select className="field" value={level} onChange={(e) => setLevel(e.target.value)}>
-            <option value="">{t("전체")}</option>
+            <option value="">{t("common:filters.all")}</option>
             {LEVELS.map((l) => (
               <option key={l} value={l}>
-                {tLevel(l)}
+                {domain.level(l)}
               </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="label">{t("학적")}</label>
+          <label className="label">{t("notifications:broadcast.enrollStatusLabel")}</label>
           <select className="field" value={enrollStatus} onChange={(e) => setEnrollStatus(e.target.value)}>
-            <option value="">{t("전체")}</option>
+            <option value="">{t("common:filters.all")}</option>
             {ENROLL_STATUSES.filter((s) => s !== "삭제").map((s) => (
               <option key={s} value={s}>
-                {tEnrollStatus(s)}
+                {domain.enrollStatus(s)}
               </option>
             ))}
           </select>
         </div>
       </div>
 
-      <label className="label mt-3">{t("메시지")}</label>
+      <label className="label mt-3">{t("notifications:broadcast.messageLabel")}</label>
       <textarea
         className="field min-h-[96px]"
         value={message}
@@ -199,14 +202,15 @@ function BroadcastComposer({
 
       {progress && (
         <p className="mt-2 text-xs text-muted">
-          {t("발송")} {progress.sent} · {t("실패")} {progress.failed}
+          {t("notifications:broadcast.sentCount")} {progress.sent} · {t("notifications:broadcast.failedCount")}{" "}
+          {progress.failed}
         </p>
       )}
 
       <button className="btn btn-primary mt-3" onClick={send} disabled={busy}>
-        {busy ? t("발송 중…") : t("텔레그램으로 보내기")}
+        {busy ? "Loading…" : t("notifications:broadcast.sendButton")}
       </button>
-      <p className="mt-2 text-xs text-muted">{t("텔레그램을 연결한 학생에게만 발송됩니다.")}</p>
+      <p className="mt-2 text-xs text-muted">{t("notifications:broadcast.telegramOnlyNote")}</p>
     </div>
   );
 }

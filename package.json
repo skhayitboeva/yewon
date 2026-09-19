@@ -3,10 +3,17 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "netlify dev",
     "dev:vite": "vite",
+    "start": "./run.sh start",
+    "stop": "./run.sh stop",
+    "restart": "./run.sh restart",
+    "status": "./run.sh status",
+    "logs": "./run.sh logs",
     "build": "tsc -b --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
@@ -16,10 +23,12 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
+    "i18next": "^26.4.2",
     "jose": "^5.9.6",
     "mongodb": "^6.12.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-i18next": "^17.0.14",
     "zod": "^3.24.1"
   },
   "devDependencies": {

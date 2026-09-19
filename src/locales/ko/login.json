@@ -1,0 +1,41 @@
+{
+  "brand": {
+    "university": "예원예술대학교",
+    "subtitle": "유학생 관리 시스템"
+  },
+  "telegram": {
+    "verifyNotice": "처음 사용하시면 학교에 등록된 휴대전화 번호로 본인 확인이 필요합니다."
+  },
+  "modeSwitch": {
+    "toStudent": "학생이신가요? 휴대전화 번호로 로그인",
+    "toStaff": "직원이신가요? 아이디로 로그인"
+  },
+  "footer": {
+    "privacyNotice": "학생 개인정보가 포함된 시스템입니다. 비밀번호를 외부에 공유하지 마세요."
+  },
+  "staffForm": {
+    "usernameLabel": "아이디",
+    "submit": "로그인"
+  },
+  "studentForm": {
+    "mobileLabel": "휴대전화 번호",
+    "phoneStep": {
+      "continueButton": "확인",
+      "accessRequestLink": "번호를 찾을 수 없으신가요? 접속 요청하기"
+    },
+    "passwordStep": {
+      "createPasswordLabel": "비밀번호 만들기",
+      "minLengthHint": "비밀번호는 5자 이상이어야 합니다.",
+      "createSubmit": "가입 완료",
+      "loginSubmit": "로그인"
+    }
+  },
+  "accessRequestForm": {
+    "intro": "등록된 번호를 찾지 못했을 때 이름과 생년월일로 관리자에게 연결을 요청할 수 있습니다.",
+    "nameLabel": "성명",
+    "birthDateLabel": "생년월일",
+    "mobileLabel": "휴대전화 번호",
+    "submitButton": "요청 보내기",
+    "submittedNotice": "요청이 접수되었습니다. 관리자 확인 후 로그인할 수 있습니다."
+  }
+}

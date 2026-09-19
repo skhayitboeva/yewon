@@ -1,0 +1,20 @@
+{
+  "title": "Profil",
+  "roleLabel": "Lavozim",
+  "roleAdmin": "Administrator",
+  "roleManager": "Menejer",
+  "staffPasswordNotice": "Xodimlar hisobining paroli server sozlamalari orqali boshqariladi va bu yerda o'zgartirilmaydi.",
+  "nameLabel": "F.I.Sh.",
+  "addressLabel": "Manzil",
+  "mobileLabel": "Telefon raqami",
+  "newPasswordLabel": "Yangi parol",
+  "newPasswordPlaceholder": "O'zgartirmaslik uchun bo'sh qoldiring",
+  "currentPasswordLabel": "Joriy parol",
+  "currentPasswordHint": "Telefon raqami yoki parolni o'zgartirish uchun joriy parol kerak.",
+  "savedToast": "Profil saqlandi.",
+  "loading": "Yuklanmoqda…",
+  "academicInfo": "O'quv ma'lumotlari",
+  "consultHistory": "Maslahatlar tarixi",
+  "consultCount": "Maslahatlar soni",
+  "lastConsulted": "Oxirgi maslahat sanasi"
+}

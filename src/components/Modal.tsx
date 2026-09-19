@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { useEscape } from "../hooks";
-import { useLang } from "../i18n";
 
 export function Modal({
   title,
@@ -18,7 +18,7 @@ export function Modal({
   width?: string;
 }) {
   useEscape(onClose);
-  const { t } = useLang();
+  const { t } = useTranslation("common");
 
   return (
     <div
@@ -40,7 +40,7 @@ export function Modal({
           </div>
           <button
             onClick={onClose}
-            aria-label={t("닫기")}
+            aria-label={t("actions.close")}
             className="rounded-lg px-2 py-1 text-xl leading-none text-muted hover:bg-plane"
           >
             ×

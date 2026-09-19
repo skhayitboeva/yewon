@@ -1,0 +1,43 @@
+{
+  "addStudent": {
+    "title": "학생 추가",
+    "subtitle": "학번과 성명은 필수입니다. 나머지는 나중에 표에서 채울 수 있습니다.",
+    "nationalityLabel": "국적",
+    "facultyLabel": "학부",
+    "gradSchoolLabel": "대학원"
+  },
+  "consult": {
+    "titleWithName": "상담 기록 · {{name}}",
+    "majorMissing": "전공 미입력",
+    "newRecord": "새 상담 기록",
+    "editRecord": "상담 기록 수정",
+    "dateLabel": "일자",
+    "methodLabel": "상담 방법",
+    "counselorLabel": "담당자",
+    "categoriesLabel": "상담 분야 (복수 선택)",
+    "contentLabel": "상담 내용",
+    "resultLabel": "조치 / 결과",
+    "cancelEdit": "수정 취소",
+    "saveChanges": "수정 저장",
+    "addRecord": "기록 추가",
+    "saveHint": "일자와 상담 분야를 선택해야 저장할 수 있습니다.",
+    "historyTitle": "기록 이력",
+    "historyCount": "({{count}}건)",
+    "noRecords": "아직 상담 기록이 없습니다.",
+    "confirmDelete": "이 상담 기록을 삭제할까요?",
+    "resultPrefix": "조치/결과 · ",
+    "updatedToast": "상담 기록을 수정했습니다.",
+    "createdToast": "상담 기록을 추가했습니다.",
+    "deletedToast": "상담 기록을 삭제했습니다."
+  },
+  "tuition": {
+    "statusLabel": "상태",
+    "autoBadge": "자동",
+    "totalLabel": "총액 (원)",
+    "termLabel": "{{n}}차",
+    "noteLabel": "비고",
+    "totalPaid": "납부 합계 {{amount}}원",
+    "shortOfTotal": " · 총액보다 {{amount}}원 부족",
+    "overTotal": "분할 납부 합계가 총액보다 {{amount}}원 많습니다."
+  }
+}

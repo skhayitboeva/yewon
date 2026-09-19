@@ -1,0 +1,16 @@
+{
+  "banner": "Ushbu ma'lumotni faqat administrator kiritishi yoki tahrirlashi mumkin. Boshqa foydalanuvchilar faqat ko'ra oladi.",
+  "title": "Ma'lumot",
+  "fields": {
+    "tuitionDeadline": "Kontrakt to'lovi muddati",
+    "classTimeUndergraduate": "Bakalavriat dars kuni va vaqti",
+    "classTimeGraduate": "Magistratura dars kuni va vaqti",
+    "visaApplicationTime": "Viza uchun ariza vaqti",
+    "orientation": "Oriyentatsiya"
+  },
+  "itemTitlePlaceholder": "Sarlavha",
+  "addItem": "Yangi band qo'shish",
+  "notSet": "Kiritilmagan",
+  "savedToast": "Ma'lumot saqlandi.",
+  "loading": "Yuklanmoqda…"
+}

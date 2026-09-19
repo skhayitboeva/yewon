@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import { useDebounced } from "../hooks";
-import { useLang } from "../i18n";
+import { useDomainLabel } from "../i18n/domainLabels";
 import {
   ABSENCE_BUCKETS,
   ENROLL_STATUSES,
@@ -82,7 +83,8 @@ export function Filters({
   total: number;
   exportHref?: string;
 }) {
-  const { lang, t, tLevel, tEnrollStatus } = useLang();
+  const { t } = useTranslation(["filters", "common"]);
+  const domain = useDomainLabel();
   const [search, setSearch] = useState(filters.q);
   const debounced = useDebounced(search, 300);
 
@@ -103,83 +105,83 @@ export function Filters({
     <div className="flex flex-wrap items-center gap-2">
       <input
         className="field w-56 py-1"
-        placeholder={t("학번 · 성명 · 영문명 · 연락처")}
+        placeholder={t("filters:searchPlaceholder")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        aria-label={t("검색")}
+        aria-label={t("common:actions.search")}
       />
 
       <Select
-        label={t("구분")}
+        label={t("filters:level.label")}
         value={filters.level}
         onChange={(v) => onChange({ level: v })}
-        options={[all(t("구분 전체")), ...list(LEVELS, tLevel)]}
+        options={[all(t("filters:level.all")), ...list(LEVELS, domain.level)]}
       />
       <Select
-        label={t("신입/재학")}
+        label={t("filters:studentType.label")}
         value={filters.studentType}
         onChange={(v) => onChange({ studentType: v })}
-        options={[all(t("신입/재학 전체")), ...list(STUDENT_TYPES, t)]}
+        options={[all(t("filters:studentType.all")), ...list(STUDENT_TYPES, domain.studentType)]}
       />
       <Select
-        label={t("전공")}
+        label={t("filters:major.label")}
         value={filters.major}
         onChange={(v) => onChange({ major: v })}
-        options={[all(t("전공 전체")), ...list(facets?.majors ?? [])]}
+        options={[all(t("filters:major.all")), ...list(facets?.majors ?? [])]}
       />
       <Select
-        label={t("학적")}
+        label={t("filters:enrollStatus.label")}
         value={filters.enrollStatus}
         onChange={(v) => onChange({ enrollStatus: v })}
-        options={[all(t("학적 전체")), ...list(ENROLL_STATUSES, tEnrollStatus)]}
+        options={[all(t("filters:enrollStatus.all")), ...list(ENROLL_STATUSES, domain.enrollStatus)]}
       />
       <Select
-        label={t("등록금")}
+        label={t("filters:tuitionStatus.label")}
         value={filters.tuitionStatus}
         onChange={(v) => onChange({ tuitionStatus: v })}
-        options={[all(t("등록금 전체")), ...list(TUITION_STATUSES, t)]}
+        options={[all(t("filters:tuitionStatus.all")), ...list(TUITION_STATUSES, domain.tuitionStatus)]}
       />
       <Select
-        label={t("납부 차수")}
+        label={t("filters:term.label")}
         value={filters.term}
         onChange={(v) => onChange({ term: v })}
         options={[
-          all(t("납부 차수 전체")),
+          all(t("filters:term.all")),
           ...[1, 2, 3, 4].map((n) => ({
             value: String(n),
-            label: lang === "en" ? `Term ${n} paid` : `${n}차 납부함`,
+            label: t("filters:term.paid", { n }),
           })),
         ]}
       />
       <Select
-        label={t("출결")}
+        label={t("filters:attendance.label")}
         value={filters.absence}
         onChange={(v) => onChange({ absence: v })}
         options={[
-          all(t("출결 전체")),
-          ...ABSENCE_BUCKETS.map((b) => ({ value: b.key, label: t(b.label) })),
+          all(t("filters:attendance.all")),
+          ...ABSENCE_BUCKETS.map((b) => ({ value: b.key, label: domain.absenceBucket(b.key) })),
         ]}
       />
       <Select
-        label={t("입학 코호트")}
+        label={t("filters:cohort.label")}
         value={filters.cohort}
         onChange={(v) => onChange({ cohort: v })}
-        options={[all(t("입학 코호트 전체")), ...list(facets?.cohorts ?? [])]}
+        options={[all(t("filters:cohort.all")), ...list(facets?.cohorts ?? [])]}
       />
 
       {active > 0 && (
         <button className="btn py-1" onClick={onReset}>
-          {t("필터 해제")} ({active})
+          {t("common:actions.clearFilters")} ({active})
         </button>
       )}
 
       <span className="nums ml-auto text-sm text-ink2">
         <b>{total.toLocaleString("ko-KR")}</b>
-        {t("명")}
+        {t("common:units.students")}
       </span>
       {exportHref && (
         <a className="btn py-1" href={exportHref}>
-          {t("CSV 내보내기")}
+          {t("filters:exportCsv")}
         </a>
       )}
     </div>

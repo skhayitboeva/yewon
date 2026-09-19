@@ -1,0 +1,50 @@
+{
+  "columns": {
+    "studentId": "Student ID",
+    "nameEn": "Name (English)",
+    "nameKo": "Name",
+    "birthDate": "Date of Birth",
+    "gender": "Gender",
+    "level": "Level",
+    "studentType": "New/Continuing",
+    "faculty": "Faculty",
+    "gradSchool": "Graduate School",
+    "course": "Program",
+    "major": "Major",
+    "grade": "Grade",
+    "semesterNo": "Semester No.",
+    "enrollStatus": "Enrollment",
+    "admissionType": "Admission Type",
+    "admissionDate": "Admission Date",
+    "address": "Address",
+    "mobile": "Mobile",
+    "phone": "Phone",
+    "email": "Email",
+    "tuition": "Tuition",
+    "absences": "Absences",
+    "contactCount": "Contact Count",
+    "memo": "Memo",
+    "consult": "Consult"
+  },
+  "toolbar": {
+    "addStudent": "Add Student",
+    "columnsButton": "Columns",
+    "perPage": "Per page",
+    "resetToDefault": "Default",
+    "showAll": "All"
+  },
+  "table": {
+    "loadError": "Failed to load the list.",
+    "loading": "Loading…",
+    "noResults": "No students match the current filters.",
+    "consultButton": "Consult",
+    "resetPassword": "Reset password",
+    "deleteStudent": "Delete student",
+    "deleteAriaLabel": "Delete {{name}}",
+    "confirmResetPassword": "Reset the login password for {{name}} ({{studentId}})?",
+    "confirmDelete": "This will delete {{name}} ({{studentId}}). Continue?",
+    "createdToast": "Student added.",
+    "deletedToast": "Student deleted.",
+    "resetPasswordToast": "Password reset."
+  }
+}

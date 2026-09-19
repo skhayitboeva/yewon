@@ -1,0 +1,20 @@
+{
+  "title": "프로필",
+  "roleLabel": "역할",
+  "roleAdmin": "관리자",
+  "roleManager": "매니저",
+  "staffPasswordNotice": "직원 계정 비밀번호는 서버 환경변수로 관리되며, 이 화면에서 변경할 수 없습니다.",
+  "nameLabel": "성명",
+  "addressLabel": "주소",
+  "mobileLabel": "휴대전화 번호",
+  "newPasswordLabel": "새 비밀번호",
+  "newPasswordPlaceholder": "변경하지 않으려면 비워두세요",
+  "currentPasswordLabel": "현재 비밀번호",
+  "currentPasswordHint": "휴대전화 번호 또는 비밀번호를 변경하려면 현재 비밀번호가 필요합니다.",
+  "savedToast": "프로필을 저장했습니다.",
+  "loading": "불러오는 중…",
+  "academicInfo": "학적 정보",
+  "consultHistory": "상담 이력",
+  "consultCount": "상담 횟수",
+  "lastConsulted": "최근 상담일"
+}

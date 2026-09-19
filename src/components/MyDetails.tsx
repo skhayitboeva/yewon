@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import { useLang } from "../i18n";
+import { tError } from "../i18n";
+import { useDomainLabel } from "../i18n/domainLabels";
 import { formatKRW, tuitionPaid } from "../../shared/domain";
 
 const STATUS_CHIP: Record<string, string> = {
@@ -36,13 +38,14 @@ export function MyDetails({
 }: {
   onToast: (kind: "ok" | "error", text: string) => void;
 }) {
-  const { t, tLevel, tEnrollStatus } = useLang();
+  const { t } = useTranslation(["profile", "students", "modals", "common"]);
+  const domain = useDomainLabel();
   const { data, isLoading, error } = useQuery({ queryKey: ["myDetails"], queryFn: api.myDetails });
 
-  if (isLoading) return <p className="p-6 text-sm text-muted">{t("불러오는 중…")}</p>;
+  if (isLoading) return <p className="p-6 text-sm text-muted">{t("common:states.loading")}</p>;
   if (error || !data) {
-    onToast("error", t("정보를 불러오지 못했습니다."));
-    return <p className="p-6 text-sm text-critical">{t("정보를 불러오지 못했습니다.")}</p>;
+    onToast("error", tError("정보를 불러오지 못했습니다."));
+    return <p className="p-6 text-sm text-critical">{tError("정보를 불러오지 못했습니다.")}</p>;
   }
 
   const { student: s, consultations, consultCount, lastConsultedAt } = data;
@@ -50,24 +53,24 @@ export function MyDetails({
 
   return (
     <div className="mx-auto max-w-[900px] space-y-4 p-4 sm:p-6">
-      <Section title={t("학적 정보")}>
+      <Section title={t("profile:academicInfo")}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Field label={t("학번")} value={s.studentId} />
-          <Field label={t("구분")} value={tLevel(s.level)} />
-          <Field label={t("전공")} value={s.major} />
-          <Field label={t("학년")} value={s.grade} />
-          <Field label={t("학기차")} value={s.semesterNo} />
-          <Field label={t("학적")} value={tEnrollStatus(s.enrollStatus)} />
-          <Field label={t("입학구분")} value={s.admissionType} />
-          <Field label={t("입학일자")} value={s.admissionDate} />
-          <Field label={t("국적")} value={s.nationality} />
+          <Field label={t("students:columns.studentId")} value={s.studentId} />
+          <Field label={t("students:columns.level")} value={domain.level(s.level)} />
+          <Field label={t("students:columns.major")} value={s.major} />
+          <Field label={t("students:columns.grade")} value={s.grade} />
+          <Field label={t("students:columns.semesterNo")} value={s.semesterNo} />
+          <Field label={t("students:columns.enrollStatus")} value={domain.enrollStatus(s.enrollStatus)} />
+          <Field label={t("students:columns.admissionType")} value={s.admissionType} />
+          <Field label={t("students:columns.admissionDate")} value={s.admissionDate} />
+          <Field label={t("modals:addStudent.nationalityLabel")} value={s.nationality} />
         </div>
       </Section>
 
-      <Section title={t("등록금")}>
+      <Section title={t("students:columns.tuition")}>
         <div className="flex items-center gap-2">
           <span className={`chip ${STATUS_CHIP[s.tuition?.status] ?? "bg-plane text-ink2"}`}>
-            {t(s.tuition?.status ?? "미납")}
+            {domain.tuitionStatus(s.tuition?.status ?? "미납")}
           </span>
           <span className="nums text-sm text-ink2">
             {formatKRW(paid)} / {formatKRW(s.tuition?.total)}
@@ -77,7 +80,7 @@ export function MyDetails({
           {TERMS.map((n) => (
             <Field
               key={n}
-              label={t(`${n}차`)}
+              label={t("modals:tuition.termLabel", { n })}
               value={formatKRW(s.tuition?.[`term${n}` as "term1"])}
             />
           ))}
@@ -87,36 +90,38 @@ export function MyDetails({
         )}
       </Section>
 
-      <Section title={t("출결")}>
-        <Field label={t("결석")} value={s.attendance?.absences ?? 0} />
+      <Section title={t("students:columns.absences")}>
+        <Field label={t("students:columns.absences")} value={s.attendance?.absences ?? 0} />
         {s.attendance?.note && (
           <p className="mt-2 whitespace-pre-wrap text-sm text-ink2">{s.attendance.note}</p>
         )}
       </Section>
 
       {s.memo && (
-        <Section title={t("메모")}>
+        <Section title={t("students:columns.memo")}>
           <p className="whitespace-pre-wrap text-sm text-ink2">{s.memo}</p>
         </Section>
       )}
 
-      <Section title={t("상담 이력")}>
+      <Section title={t("profile:consultHistory")}>
         <p className="mb-3 text-xs text-muted">
-          {t("상담 횟수")} {consultCount}
-          {lastConsultedAt && ` · ${t("최근 상담일")} ${lastConsultedAt}`}
+          {t("profile:consultCount")} {consultCount}
+          {lastConsultedAt && ` · ${t("profile:lastConsulted")} ${lastConsultedAt}`}
         </p>
         {consultations.length === 0 ? (
-          <p className="text-sm text-muted">{t("아직 상담 기록이 없습니다.")}</p>
+          <p className="text-sm text-muted">{t("modals:consult.noRecords")}</p>
         ) : (
           <ul className="space-y-3">
             {consultations.map((row) => (
               <li key={row._id} className="card p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="nums text-sm font-bold">{row.date}</span>
-                  {row.method && <span className="chip bg-plane text-ink2">{t(row.method)}</span>}
+                  {row.method && (
+                    <span className="chip bg-plane text-ink2">{domain.consultMethod(row.method)}</span>
+                  )}
                   {row.categories.map((c) => (
                     <span key={c} className="chip bg-[#eef3fa] text-brand">
-                      {t(c)}
+                      {domain.consultCategory(c)}
                     </span>
                   ))}
                 </div>
@@ -126,7 +131,7 @@ export function MyDetails({
                 {row.result && (
                   <p className="mt-1.5 whitespace-pre-wrap text-sm text-ink2">
                     <span className="font-semibold">
-                      {t("조치 / 결과")}
+                      {t("modals:consult.resultLabel")}
                       {": "}
                     </span>
                     {row.result}
@@ -134,7 +139,7 @@ export function MyDetails({
                 )}
                 {row.counselor && (
                   <p className="mt-1 text-xs text-muted">
-                    {t("담당자")} {row.counselor}
+                    {t("modals:consult.counselorLabel")} {row.counselor}
                   </p>
                 )}
               </li>

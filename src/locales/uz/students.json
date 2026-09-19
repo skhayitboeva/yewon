@@ -1,0 +1,50 @@
+{
+  "columns": {
+    "studentId": "Talaba raqami",
+    "nameEn": "Ism (inglizcha)",
+    "nameKo": "F.I.Sh.",
+    "birthDate": "Tug'ilgan sana",
+    "gender": "Jinsi",
+    "level": "Bosqich",
+    "studentType": "Yangi/Davomchi",
+    "faculty": "Fakultet",
+    "gradSchool": "Magistratura maktabi",
+    "course": "Dastur",
+    "major": "Mutaxassislik",
+    "grade": "Kurs",
+    "semesterNo": "Semestr raqami",
+    "enrollStatus": "O'quv holati",
+    "admissionType": "Qabul turi",
+    "admissionDate": "Qabul sanasi",
+    "address": "Manzil",
+    "mobile": "Telefon",
+    "phone": "Qo'shimcha telefon",
+    "email": "Elektron pochta",
+    "tuition": "Kontrakt",
+    "absences": "Qoldirilgan darslar",
+    "contactCount": "Aloqa soni",
+    "memo": "Izoh",
+    "consult": "Maslahat"
+  },
+  "toolbar": {
+    "addStudent": "Talaba qo'shish",
+    "columnsButton": "Ustunlar",
+    "perPage": "Sahifada",
+    "resetToDefault": "Standart",
+    "showAll": "Barchasi"
+  },
+  "table": {
+    "loadError": "Ro'yxatni yuklab bo'lmadi.",
+    "loading": "Yuklanmoqda…",
+    "noResults": "Joriy filtrlarga mos talaba topilmadi.",
+    "consultButton": "Maslahat",
+    "resetPassword": "Parolni tiklash",
+    "deleteStudent": "Talabani o'chirish",
+    "deleteAriaLabel": "{{name}}ni o'chirish",
+    "confirmResetPassword": "{{name}} ({{studentId}}) talabaning kirish parolini tiklaysizmi?",
+    "confirmDelete": "{{name}} ({{studentId}}) o'chiriladi. Davom etasizmi?",
+    "createdToast": "Talaba qo'shildi.",
+    "deletedToast": "Talaba o'chirildi.",
+    "resetPasswordToast": "Parol tiklandi."
+  }
+}

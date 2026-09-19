@@ -1,0 +1,43 @@
+{
+  "addStudent": {
+    "title": "Add Student",
+    "subtitle": "Student ID and name are required. Everything else can be filled in later from the table.",
+    "nationalityLabel": "Nationality",
+    "facultyLabel": "Faculty",
+    "gradSchoolLabel": "Graduate School"
+  },
+  "consult": {
+    "titleWithName": "Consultation Record · {{name}}",
+    "majorMissing": "Major not entered",
+    "newRecord": "New Consultation Record",
+    "editRecord": "Edit Consultation Record",
+    "dateLabel": "Date",
+    "methodLabel": "Method",
+    "counselorLabel": "Counselor",
+    "categoriesLabel": "Categories (select all that apply)",
+    "contentLabel": "Details",
+    "resultLabel": "Action / Outcome",
+    "cancelEdit": "Cancel edit",
+    "saveChanges": "Save changes",
+    "addRecord": "Add record",
+    "saveHint": "Choose a date and at least one category to save.",
+    "historyTitle": "Record History",
+    "historyCount": "({{count}})",
+    "noRecords": "No consultation records yet.",
+    "confirmDelete": "Delete this consultation record?",
+    "resultPrefix": "Action/Outcome · ",
+    "updatedToast": "Consultation record updated.",
+    "createdToast": "Consultation record added.",
+    "deletedToast": "Consultation record deleted."
+  },
+  "tuition": {
+    "statusLabel": "Status",
+    "autoBadge": "auto",
+    "totalLabel": "Total (KRW)",
+    "termLabel": "Term {{n}}",
+    "noteLabel": "Note",
+    "totalPaid": "Total paid {{amount}} won",
+    "shortOfTotal": " · {{amount}} won short of total",
+    "overTotal": "Term payments exceed the total by {{amount}} won."
+  }
+}

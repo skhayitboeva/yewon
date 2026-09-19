@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api, ApiError, type StudentPage } from "../api";
+import { tError } from "../i18n";
+import { useDomainLabel } from "../i18n/domainLabels";
 import { EditableCell, SelectCell } from "./EditableCell";
 import { TuitionCell } from "./TuitionCell";
 import { Filters, EMPTY_FILTERS, type FilterState } from "./Filters";
@@ -8,7 +11,6 @@ import { AddStudentModal } from "./AddStudentModal";
 import { ConsultModal } from "./ConsultModal";
 import { COLUMNS, DEFAULT_VISIBLE, getPath, type ColumnDef } from "./columns";
 import { useUrlState } from "../hooks";
-import { useLang } from "../i18n";
 import { type Role, type Student, type Tuition } from "../../shared/domain";
 
 const PAGE_SIZES = [25, 50, 100, 200];
@@ -60,7 +62,8 @@ export function StudentsTable({
   role: Role;
 }) {
   const canWrite = role === "admin";
-  const { lang, t, tLevel, tEnrollStatus } = useLang();
+  const { t } = useTranslation(["students", "common"]);
+  const domain = useDomainLabel();
   const [state, setState] = useUrlState({ ...DEFAULTS, ...(initialFilter ?? {}) });
   const [visible, setVisible] = useState<string[]>(DEFAULT_VISIBLE);
   const [showColumns, setShowColumns] = useState(false);
@@ -120,7 +123,7 @@ export function StudentsTable({
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(queryKey, ctx.previous);
-      onToast("error", err instanceof ApiError ? t(err.message) : t("저장에 실패했습니다."));
+      onToast("error", err instanceof ApiError ? tError(err.message) : tError("저장에 실패했습니다."));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stats"] });
@@ -132,22 +135,22 @@ export function StudentsTable({
   const markDeleted = useMutation({
     mutationFn: (id: string) => api.patchStudent(id, { enrollStatus: "삭제" }),
     onSuccess: () => {
-      onToast("ok", t("학생을 삭제했습니다."));
+      onToast("ok", t("students:table.deletedToast"));
       qc.invalidateQueries({ queryKey: ["students"] });
       qc.invalidateQueries({ queryKey: ["stats"] });
     },
     onError: (err) =>
-      onToast("error", err instanceof ApiError ? t(err.message) : t("삭제에 실패했습니다.")),
+      onToast("error", err instanceof ApiError ? tError(err.message) : tError("삭제에 실패했습니다.")),
   });
 
   const resetPassword = useMutation({
     mutationFn: (id: string) => api.resetStudentPassword(id),
     onSuccess: () => {
-      onToast("ok", t("비밀번호를 초기화했습니다."));
+      onToast("ok", t("students:table.resetPasswordToast"));
       qc.invalidateQueries({ queryKey: ["students"] });
     },
     onError: (err) =>
-      onToast("error", err instanceof ApiError ? t(err.message) : t("초기화에 실패했습니다.")),
+      onToast("error", err instanceof ApiError ? tError(err.message) : tError("초기화에 실패했습니다.")),
   });
 
   function save(student: Student, field: string, value: unknown) {
@@ -182,6 +185,7 @@ export function StudentsTable({
   const page = Number(state.page) || 1;
   const pages = data?.pages ?? 1;
   const exportHref = `/api/export.csv?${queryString}`;
+  const colLabel = (col: ColumnDef) => t(`students:columns.${col.labelKey}`);
 
   return (
     <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6">
@@ -197,13 +201,13 @@ export function StudentsTable({
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
           {canWrite && (
             <button className="btn btn-primary py-1" onClick={() => setAdding(true)}>
-              + {t("학생 추가")}
+              + {t("students:toolbar.addStudent")}
             </button>
           )}
 
           <div className="relative">
             <button className="btn py-1" onClick={() => setShowColumns((v) => !v)}>
-              {lang === "en" ? "Columns" : "열 표시"} ({cols.length}/{COLUMNS.length})
+              {t("students:toolbar.columnsButton")} ({cols.length}/{COLUMNS.length})
             </button>
             {showColumns && (
               <div className="absolute left-0 z-30 mt-1 max-h-80 w-56 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-xl">
@@ -226,18 +230,18 @@ export function StudentsTable({
                         )
                       }
                     />
-                    {lang === "en" ? c.labelEn : c.label}
+                    {colLabel(c)}
                   </label>
                 ))}
                 <div className="mt-1 flex gap-1 border-t border-line pt-2">
                   <button className="btn flex-1 py-1 text-xs" onClick={() => setVisible(DEFAULT_VISIBLE)}>
-                    {t("기본값")}
+                    {t("students:toolbar.resetToDefault")}
                   </button>
                   <button
                     className="btn flex-1 py-1 text-xs"
                     onClick={() => setVisible(COLUMNS.map((c) => c.key))}
                   >
-                    {t("전체")}
+                    {t("students:toolbar.showAll")}
                   </button>
                 </div>
               </div>
@@ -245,7 +249,7 @@ export function StudentsTable({
           </div>
 
           <label className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-ink2">
-            {lang === "en" ? "Per page" : "페이지당"}
+            {t("students:toolbar.perPage")}
             <select
               className="field w-auto py-1"
               value={state.limit}
@@ -264,9 +268,7 @@ export function StudentsTable({
       {/* ---------------------------------------------------------- table */}
       <div className="card mt-3 overflow-x-auto">
         {error ? (
-          <p className="p-8 text-center text-sm text-critical">
-            {t("목록을 불러오지 못했습니다.")}
-          </p>
+          <p className="p-8 text-center text-sm text-critical">{t("students:table.loadError")}</p>
         ) : (
           <table className="w-full table-fixed border-collapse text-sm">
             <thead>
@@ -288,13 +290,11 @@ export function StudentsTable({
                         className="inline-flex items-center gap-1 hover:text-brand"
                         onClick={() => toggleSort(col)}
                       >
-                        {lang === "en" ? col.labelEn : col.label}
+                        {colLabel(col)}
                         <span className="text-[9px] text-brand">{sortMark(col)}</span>
                       </button>
-                    ) : lang === "en" ? (
-                      col.labelEn
                     ) : (
-                      col.label
+                      colLabel(col)
                     )}
                   </th>
                 ))}
@@ -309,7 +309,7 @@ export function StudentsTable({
                     colSpan={cols.length + (canWrite ? 1 : 0)}
                     className="p-8 text-center text-sm text-muted"
                   >
-                    {t("불러오는 중…")}
+                    {t("students:table.loading")}
                   </td>
                 </tr>
               )}
@@ -320,7 +320,7 @@ export function StudentsTable({
                     colSpan={cols.length + (canWrite ? 1 : 0)}
                     className="p-8 text-center text-sm text-muted"
                   >
-                    {t("조건에 맞는 학생이 없습니다.")}
+                    {t("students:table.noResults")}
                   </td>
                 </tr>
               )}
@@ -352,33 +352,35 @@ export function StudentsTable({
                       <div className="flex items-center justify-end gap-1">
                       {student.hasPassword && (
                         <button
-                          title={t("비밀번호 초기화")}
+                          title={t("students:table.resetPassword")}
                           className="rounded px-1.5 py-1 text-[11px] font-semibold text-muted hover:bg-plane hover:text-ink2"
                           onClick={() => {
                             if (
                               window.confirm(
-                                lang === "en"
-                                  ? `Reset the login password for ${student.nameKo} (${student.studentId})?`
-                                  : `${student.nameKo}(${student.studentId}) 학생의 비밀번호를 초기화할까요?`
+                                t("students:table.confirmResetPassword", {
+                                  name: student.nameKo,
+                                  studentId: student.studentId,
+                                })
                               )
                             ) {
                               resetPassword.mutate(student._id);
                             }
                           }}
                         >
-                          {t("비밀번호 초기화")}
+                          {t("students:table.resetPassword")}
                         </button>
                       )}
                       <button
-                        title={lang === "en" ? "Delete student" : "학생 삭제"}
-                        aria-label={lang === "en" ? `Delete ${student.nameKo}` : `${student.nameKo} 삭제`}
+                        title={t("students:table.deleteStudent")}
+                        aria-label={t("students:table.deleteAriaLabel", { name: student.nameKo })}
                         className="rounded p-1 text-muted hover:bg-[#fbeaea] hover:text-critical"
                         onClick={() => {
                           if (
                             window.confirm(
-                              lang === "en"
-                                ? `This will delete ${student.nameKo} (${student.studentId}). Continue?`
-                                : `${student.nameKo}(${student.studentId}) 학생을 삭제됩니다. 계속할까요?`
+                              t("students:table.confirmDelete", {
+                                name: student.nameKo,
+                                studentId: student.studentId,
+                              })
                             )
                           ) {
                             markDeleted.mutate(student._id);
@@ -408,7 +410,7 @@ export function StudentsTable({
             disabled={page <= 1}
             onClick={() => setState({ page: String(page - 1) })}
           >
-            {t("이전")}
+            {t("common:actions.previous")}
           </button>
           <span className="nums px-2 text-sm text-ink2">
             {page} / {pages}
@@ -418,7 +420,7 @@ export function StudentsTable({
             disabled={page >= pages}
             onClick={() => setState({ page: String(page + 1) })}
           >
-            {t("다음")}
+            {t("common:actions.next")}
           </button>
           <button
             className="btn py-1"
@@ -435,7 +437,7 @@ export function StudentsTable({
           onClose={() => setAdding(false)}
           onCreated={() => {
             setAdding(false);
-            onToast("ok", t("학생을 추가했습니다."));
+            onToast("ok", t("students:table.createdToast"));
             qc.invalidateQueries({ queryKey: ["students"] });
             qc.invalidateQueries({ queryKey: ["stats"] });
             qc.invalidateQueries({ queryKey: ["facets"] });
@@ -467,7 +469,19 @@ export function StudentsTable({
             value={String(getPath(student, col.field) ?? "")}
             options={col.options ?? []}
             renderLabel={
-              col.key === "level" ? tLevel : col.key === "enrollStatus" ? tEnrollStatus : t
+              col.key === "level"
+                ? domain.level
+                : col.key === "enrollStatus"
+                  ? domain.enrollStatus
+                  : col.key === "studentType"
+                    ? domain.studentType
+                    : col.key === "gender"
+                      ? domain.gender
+                      : col.key === "admissionType"
+                        ? domain.admissionType
+                        : col.key === "course"
+                          ? domain.course
+                          : (v: string) => v
             }
             onSave={(v) => onSave(student, col.field, v)}
             readOnly={readOnly}
@@ -489,7 +503,7 @@ export function StudentsTable({
             className="btn px-2 py-0.5 text-xs"
             onClick={() => setConsultFor(student)}
           >
-            {t("상담")}
+            {t("students:table.consultButton")}
             {(student.consultCount ?? 0) > 0 && (
               <span className="nums ml-1 rounded-full bg-brand px-1.5 text-[10px] font-bold text-white">
                 {student.consultCount}

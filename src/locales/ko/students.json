@@ -1,0 +1,50 @@
+{
+  "columns": {
+    "studentId": "학번",
+    "nameEn": "성명(영문)",
+    "nameKo": "성명",
+    "birthDate": "생년월일",
+    "gender": "성별",
+    "level": "구분",
+    "studentType": "신입/재학",
+    "faculty": "학부",
+    "gradSchool": "대학원",
+    "course": "과정",
+    "major": "전공",
+    "grade": "학년",
+    "semesterNo": "학기차",
+    "enrollStatus": "학적",
+    "admissionType": "입학구분",
+    "admissionDate": "입학일자",
+    "address": "주소",
+    "mobile": "휴대전화",
+    "phone": "전화번호",
+    "email": "이메일",
+    "tuition": "등록금",
+    "absences": "결석",
+    "contactCount": "연락횟수",
+    "memo": "메모",
+    "consult": "상담"
+  },
+  "toolbar": {
+    "addStudent": "학생 추가",
+    "columnsButton": "열 표시",
+    "perPage": "페이지당",
+    "resetToDefault": "기본값",
+    "showAll": "전체"
+  },
+  "table": {
+    "loadError": "목록을 불러오지 못했습니다.",
+    "loading": "불러오는 중…",
+    "noResults": "조건에 맞는 학생이 없습니다.",
+    "consultButton": "상담",
+    "resetPassword": "비밀번호 초기화",
+    "deleteStudent": "학생 삭제",
+    "deleteAriaLabel": "{{name}} 삭제",
+    "confirmResetPassword": "{{name}}({{studentId}}) 학생의 비밀번호를 초기화할까요?",
+    "confirmDelete": "{{name}}({{studentId}}) 학생을 삭제됩니다. 계속할까요?",
+    "createdToast": "학생을 추가했습니다.",
+    "deletedToast": "학생을 삭제했습니다.",
+    "resetPasswordToast": "비밀번호를 초기화했습니다."
+  }
+}

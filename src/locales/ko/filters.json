@@ -1,0 +1,12 @@
+{
+  "searchPlaceholder": "학번 · 성명 · 영문명 · 연락처",
+  "level": { "label": "구분", "all": "구분 전체" },
+  "studentType": { "label": "신입/재학", "all": "신입/재학 전체" },
+  "major": { "label": "전공", "all": "전공 전체" },
+  "enrollStatus": { "label": "학적", "all": "학적 전체" },
+  "tuitionStatus": { "label": "등록금", "all": "등록금 전체" },
+  "term": { "label": "납부 차수", "all": "납부 차수 전체", "paid": "{{n}}차 납부함" },
+  "attendance": { "label": "출결", "all": "출결 전체" },
+  "cohort": { "label": "입학 코호트", "all": "입학 코호트 전체" },
+  "exportCsv": "CSV 내보내기"
+}

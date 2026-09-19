@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLang } from "../i18n";
+import { useTranslation } from "react-i18next";
 
 type Kind = "text" | "number" | "date" | "phone";
 const PHONE_MAX_DIGITS = 11;
@@ -21,7 +21,7 @@ export function EditableCell({
   width?: number;
   readOnly?: boolean;
 }) {
-  const { t } = useLang();
+  const { t } = useTranslation("common");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value ?? ""));
   const inputRef = useRef<HTMLInputElement>(null);
@@ -97,7 +97,7 @@ export function EditableCell({
     <button
       type="button"
       onClick={() => setEditing(true)}
-      title={t("클릭하여 수정")}
+      title={t("states.clickToEdit")}
       className={`-mx-1 block w-full truncate rounded px-1 py-0.5 hover:bg-[#eef3fa]
         ${align === "right" ? "text-right" : "text-left"}
         ${display ? "" : "text-muted"}`}

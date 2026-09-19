@@ -1,0 +1,16 @@
+{
+  "banner": "이 정보는 관리자만 입력·수정할 수 있으며, 그 외 사용자는 조회만 가능합니다.",
+  "title": "안내",
+  "fields": {
+    "tuitionDeadline": "등록금 마감 기한",
+    "classTimeUndergraduate": "학부 수업 요일 및 시간",
+    "classTimeGraduate": "대학원 수업 요일 및 시간",
+    "visaApplicationTime": "비자 신청 시간",
+    "orientation": "오리엔테이션"
+  },
+  "itemTitlePlaceholder": "제목",
+  "addItem": "새 항목 추가",
+  "notSet": "미입력",
+  "savedToast": "안내 정보를 저장했습니다.",
+  "loading": "불러오는 중…"
+}

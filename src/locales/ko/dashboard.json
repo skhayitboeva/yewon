@@ -1,0 +1,38 @@
+{
+  "sections": {
+    "allStudents": "전체 학생",
+    "allStudentsNote": "카드를 누르면 해당 조건으로 학생 목록이 열립니다",
+    "tuition": "등록금",
+    "attendance": "출결",
+    "consultations": "상담",
+    "consultationsNote": "분야별 기록 건수 (한 기록이 여러 분야에 해당할 수 있음)"
+  },
+  "cards": {
+    "allStudentsLabel": "전체 학생",
+    "undergradContinuing": "학부 · 재학생",
+    "undergradNew": "학부 · 신입생 ({{semester}})",
+    "gradContinuing": "대학원 · 재학생",
+    "gradNew": "대학원 · 신입생 ({{semester}})",
+    "semesterLabel": "{{year}}-{{term}}학기"
+  },
+  "tuition": {
+    "billed": "고지",
+    "collected": "수납",
+    "outstanding": "미수",
+    "won": "{{amount}}원",
+    "ofTotal": "전체의 {{percent}}%",
+    "paymentStatus": "납부 현황",
+    "partialNote": "부분납부 학생 기준",
+    "termPayment": "{{n}}차 납부"
+  },
+  "attendance": {
+    "status": "출결 현황",
+    "urgentNote": "결석 4회 이상은 즉시 상담 필요"
+  },
+  "consult": {
+    "recent": "최근 상담",
+    "noRecords": "기록이 없습니다."
+  },
+  "loadError": "집계를 불러오지 못했습니다.",
+  "loading": "불러오는 중…"
+}

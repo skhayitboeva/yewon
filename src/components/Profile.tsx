@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api, ApiError } from "../api";
-import { useLang } from "../i18n";
+import { tError } from "../i18n";
 import type { Role } from "../../shared/domain";
 
 const MIN_PASSWORD_LENGTH = 5;
@@ -14,20 +15,18 @@ export function Profile({
   role: Role;
   onToast: (kind: "ok" | "error", text: string) => void;
 }) {
-  const { t } = useLang();
+  const { t } = useTranslation("profile");
 
   if (role !== "user") {
     return (
       <div className="mx-auto max-w-[500px] p-4 sm:p-6">
         <div className="card p-5">
-          <h2 className="text-base font-bold">{t("프로필")}</h2>
+          <h2 className="text-base font-bold">{t("title")}</h2>
           <div className="mt-4">
-            <div className="label">{t("역할")}</div>
-            <div className="text-sm text-ink">{role === "admin" ? t("관리자") : t("매니저")}</div>
+            <div className="label">{t("roleLabel")}</div>
+            <div className="text-sm text-ink">{role === "admin" ? t("roleAdmin") : t("roleManager")}</div>
           </div>
-          <p className="mt-4 text-xs leading-relaxed text-muted">
-            {t("직원 계정 비밀번호는 서버 환경변수로 관리되며, 이 화면에서 변경할 수 없습니다.")}
-          </p>
+          <p className="mt-4 text-xs leading-relaxed text-muted">{t("staffPasswordNotice")}</p>
         </div>
       </div>
     );
@@ -41,7 +40,7 @@ function StudentProfile({
 }: {
   onToast: (kind: "ok" | "error", text: string) => void;
 }) {
-  const { t } = useLang();
+  const { t } = useTranslation(["profile", "common"]);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["myDetails"], queryFn: api.myDetails });
 
@@ -61,7 +60,7 @@ function StudentProfile({
     }
   }, [data?.student]);
 
-  if (isLoading || !data) return <p className="p-6 text-sm text-muted">{t("불러오는 중…")}</p>;
+  if (isLoading || !data) return <p className="p-6 text-sm text-muted">{t("loading")}</p>;
 
   const s = data.student;
   const mobileChanged = mobile !== s.mobile.replace(/[^\d]/g, "");
@@ -73,7 +72,7 @@ function StudentProfile({
     setError("");
 
     if (wantsPasswordChange && newPassword.length < MIN_PASSWORD_LENGTH) {
-      setError(`비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`);
+      setError("비밀번호는 5자 이상이어야 합니다.");
       return;
     }
 
@@ -85,7 +84,7 @@ function StudentProfile({
     if (needsCurrentPassword) body.currentPassword = currentPassword;
 
     if (Object.keys(body).length === 0 || (Object.keys(body).length === 1 && "currentPassword" in body)) {
-      onToast("error", t("변경할 항목이 없습니다."));
+      onToast("error", tError("변경할 항목이 없습니다."));
       return;
     }
 
@@ -93,7 +92,7 @@ function StudentProfile({
     try {
       await api.updateMyProfile(body);
       await qc.invalidateQueries({ queryKey: ["myDetails"] });
-      onToast("ok", t("프로필을 저장했습니다."));
+      onToast("ok", t("savedToast"));
       setCurrentPassword("");
       setNewPassword("");
     } catch (err) {
@@ -106,11 +105,11 @@ function StudentProfile({
   return (
     <div className="mx-auto max-w-[500px] p-4 sm:p-6">
       <form onSubmit={submit} className="card space-y-4 p-5">
-        <h2 className="text-base font-bold">{t("프로필")}</h2>
+        <h2 className="text-base font-bold">{t("title")}</h2>
 
         <div>
           <label className="label" htmlFor="profile-name">
-            {t("성명")}
+            {t("nameLabel")}
           </label>
           <input
             id="profile-name"
@@ -122,7 +121,7 @@ function StudentProfile({
 
         <div>
           <label className="label" htmlFor="profile-address">
-            {t("주소")}
+            {t("addressLabel")}
           </label>
           <input
             id="profile-address"
@@ -134,7 +133,7 @@ function StudentProfile({
 
         <div>
           <label className="label" htmlFor="profile-mobile">
-            {t("휴대전화 번호")}
+            {t("mobileLabel")}
           </label>
           <input
             id="profile-mobile"
@@ -148,14 +147,14 @@ function StudentProfile({
 
         <div className="border-t border-line pt-4">
           <label className="label" htmlFor="profile-new-password">
-            {t("새 비밀번호")}
+            {t("newPasswordLabel")}
           </label>
           <input
             id="profile-new-password"
             type="password"
             autoComplete="new-password"
             className="field"
-            placeholder={t("변경하지 않으려면 비워두세요")}
+            placeholder={t("newPasswordPlaceholder")}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />
@@ -164,7 +163,7 @@ function StudentProfile({
         {needsCurrentPassword && (
           <div>
             <label className="label" htmlFor="profile-current-password">
-              {t("현재 비밀번호")}
+              {t("currentPasswordLabel")}
             </label>
             <input
               id="profile-current-password"
@@ -174,20 +173,18 @@ function StudentProfile({
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
             />
-            <p className="mt-1 text-xs text-muted">
-              {t("휴대전화 번호 또는 비밀번호를 변경하려면 현재 비밀번호가 필요합니다.")}
-            </p>
+            <p className="mt-1 text-xs text-muted">{t("currentPasswordHint")}</p>
           </div>
         )}
 
         {error && (
           <p role="alert" className="text-sm font-semibold text-critical">
-            {t(error)}
+            {tError(error)}
           </p>
         )}
 
         <button type="submit" disabled={busy} className="btn btn-primary w-full py-2">
-          {busy ? t("저장 중…") : t("저장")}
+          {busy ? "Loading…" : t("common:actions.save")}
         </button>
       </form>
     </div>

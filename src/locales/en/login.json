@@ -1,0 +1,41 @@
+{
+  "brand": {
+    "university": "Yewon University",
+    "subtitle": "International Student Management System"
+  },
+  "telegram": {
+    "verifyNotice": "First time here? Verify with the phone number the school has on file for you."
+  },
+  "modeSwitch": {
+    "toStudent": "Are you a student? Log in with your phone number",
+    "toStaff": "Are you staff? Log in with your username"
+  },
+  "footer": {
+    "privacyNotice": "This system contains students' personal data. Do not share the password externally."
+  },
+  "staffForm": {
+    "usernameLabel": "Username",
+    "submit": "Log in"
+  },
+  "studentForm": {
+    "mobileLabel": "Mobile phone number",
+    "phoneStep": {
+      "continueButton": "Continue",
+      "accessRequestLink": "Can't find your number? Request access"
+    },
+    "passwordStep": {
+      "createPasswordLabel": "Create a password",
+      "minLengthHint": "Password must be at least 5 characters.",
+      "createSubmit": "Finish sign-up",
+      "loginSubmit": "Log in"
+    }
+  },
+  "accessRequestForm": {
+    "intro": "If your number isn't found, you can request the admin link your account using your name and date of birth.",
+    "nameLabel": "Name",
+    "birthDateLabel": "Date of birth",
+    "mobileLabel": "Mobile phone number",
+    "submitButton": "Send request",
+    "submittedNotice": "Request submitted. You'll be able to log in once an admin confirms it."
+  }
+}

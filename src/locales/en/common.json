@@ -1,0 +1,45 @@
+{
+  "actions": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "search": "Search",
+    "previous": "Previous",
+    "next": "Next",
+    "clearSelection": "Clear selection",
+    "clearFilters": "Clear filters",
+    "login": "Log in",
+    "back": "Back"
+  },
+  "filters": {
+    "all": "All"
+  },
+  "fields": {
+    "password": "Password",
+    "default": "Default"
+  },
+  "states": {
+    "loading": "Loading…",
+    "clickToEdit": "Click to edit"
+  },
+  "header": {
+    "title": "Yewon University International Student Management System",
+    "subtitle": "Undergraduate · Graduate | Enrollment, tuition, attendance & consultation management",
+    "logout": "Logout"
+  },
+  "tabs": {
+    "dashboard": "Dashboard",
+    "students": "All Students",
+    "details": "My Details",
+    "profile": "Profile",
+    "info": "Info",
+    "notifications": "Notifications"
+  },
+  "units": {
+    "students": "",
+    "records": ""
+  }
+}

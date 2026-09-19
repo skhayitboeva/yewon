@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api, ApiError } from "../api";
-import { useLang } from "../i18n";
+import { tError } from "../i18n";
 import { EMPTY_INFO, type Info as InfoData, type InfoItem, type Role } from "../../shared/domain";
 
 type FixedFieldKey = Exclude<keyof InfoData, "items">;
 
-const FIELDS: { key: FixedFieldKey; label: string }[] = [
-  { key: "tuitionDeadline", label: "등록금 마감 기한" },
-  { key: "classTimeUndergraduate", label: "학부 수업 요일 및 시간" },
-  { key: "classTimeGraduate", label: "대학원 수업 요일 및 시간" },
-  { key: "visaApplicationTime", label: "비자 신청 시간" },
-  { key: "orientation", label: "오리엔테이션" },
+const FIELD_KEYS: { key: FixedFieldKey; labelKey: string }[] = [
+  { key: "tuitionDeadline", labelKey: "fields.tuitionDeadline" },
+  { key: "classTimeUndergraduate", labelKey: "fields.classTimeUndergraduate" },
+  { key: "classTimeGraduate", labelKey: "fields.classTimeGraduate" },
+  { key: "visaApplicationTime", labelKey: "fields.visaApplicationTime" },
+  { key: "orientation", labelKey: "fields.orientation" },
 ];
 
 export function Info({
@@ -21,7 +22,7 @@ export function Info({
   role: Role | null;
   onToast: (kind: "ok" | "error", text: string) => void;
 }) {
-  const { t } = useLang();
+  const { t } = useTranslation(["info", "common"]);
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["info"], queryFn: api.info });
 
@@ -66,10 +67,10 @@ export function Info({
     try {
       await api.saveInfo(draft);
       await qc.invalidateQueries({ queryKey: ["info"] });
-      onToast("ok", t("안내 정보를 저장했습니다."));
+      onToast("ok", t("info:savedToast"));
       setEditing(false);
     } catch (err) {
-      onToast("error", err instanceof ApiError ? t(err.message) : t("저장에 실패했습니다."));
+      onToast("error", err instanceof ApiError ? tError(err.message) : tError("저장에 실패했습니다."));
     } finally {
       setBusy(false);
     }
@@ -79,27 +80,25 @@ export function Info({
     <div className="mx-auto max-w-[900px] space-y-4 p-4 sm:p-6">
       <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-3.5 text-sm text-ink2">
         <span aria-hidden>⚠️</span>
-        <p>
-          {t("이 정보는 관리자만 입력·수정할 수 있으며, 그 외 사용자는 조회만 가능합니다.")}
-        </p>
+        <p>{t("info:banner")}</p>
       </div>
 
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-bold">{t("안내")}</h2>
+        <h2 className="text-base font-bold">{t("info:title")}</h2>
         {isAdmin && !editing && (
           <button className="btn" type="button" onClick={startEdit}>
-            {t("수정")}
+            {t("common:actions.edit")}
           </button>
         )}
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-muted">{t("불러오는 중…")}</p>
+        <p className="text-sm text-muted">{t("common:states.loading")}</p>
       ) : editing ? (
         <div className="space-y-3.5">
-          {FIELDS.map(({ key, label }) => (
+          {FIELD_KEYS.map(({ key, labelKey }) => (
             <div key={key} className="card p-4">
-              <label className="label">{t(label)}</label>
+              <label className="label">{t(`info:${labelKey}`)}</label>
               <textarea
                 className="field"
                 rows={2}
@@ -113,7 +112,7 @@ export function Info({
               <div className="flex items-start gap-2">
                 <input
                   className="field"
-                  placeholder={t("제목")}
+                  placeholder={t("info:itemTitlePlaceholder")}
                   value={item.label}
                   onChange={(e) => updateItem(item.id, { label: e.target.value })}
                 />
@@ -122,7 +121,7 @@ export function Info({
                   type="button"
                   onClick={() => removeItem(item.id)}
                 >
-                  {t("삭제")}
+                  {t("common:actions.delete")}
                 </button>
               </div>
               <textarea
@@ -135,35 +134,35 @@ export function Info({
           ))}
           <div className="flex items-center justify-between gap-2 pt-1">
             <button className="btn" type="button" onClick={addItem}>
-              {t("새 항목 추가")}
+              {t("info:addItem")}
             </button>
             <div className="flex gap-2">
               <button className="btn" type="button" onClick={cancelEdit} disabled={busy}>
-                {t("취소")}
+                {t("common:actions.cancel")}
               </button>
               <button className="btn btn-primary" type="button" onClick={save} disabled={busy}>
-                {busy ? t("저장 중…") : t("저장")}
+                {busy ? "Loading…" : t("common:actions.save")}
               </button>
             </div>
           </div>
         </div>
       ) : (
         <div className="space-y-3.5">
-          {FIELDS.map(({ key, label }) => (
+          {FIELD_KEYS.map(({ key, labelKey }) => (
             <div key={key} className="card p-4">
-              <div className="label">{t(label)}</div>
+              <div className="label">{t(`info:${labelKey}`)}</div>
               <div className="whitespace-pre-wrap text-sm text-ink">
-                {data?.[key] ? data[key] : <span className="text-muted">{t("미입력")}</span>}
+                {data?.[key] ? data[key] : <span className="text-muted">{t("info:notSet")}</span>}
               </div>
             </div>
           ))}
           {data?.items.map((item) => (
             <div key={item.id} className="card p-4">
               <div className="label">
-                {item.label || <span className="text-muted">{t("미입력")}</span>}
+                {item.label || <span className="text-muted">{t("info:notSet")}</span>}
               </div>
               <div className="whitespace-pre-wrap text-sm text-ink">
-                {item.value || <span className="text-muted">{t("미입력")}</span>}
+                {item.value || <span className="text-muted">{t("info:notSet")}</span>}
               </div>
             </div>
           ))}

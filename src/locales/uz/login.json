@@ -1,0 +1,41 @@
+{
+  "brand": {
+    "university": "Yewon universiteti",
+    "subtitle": "Chet ellik talabalarni boshqarish tizimi"
+  },
+  "telegram": {
+    "verifyNotice": "Birinchi marta kirayapsizmi? Maktabda ro'yxatdan o'tgan telefon raqamingiz orqali tasdiqlang."
+  },
+  "modeSwitch": {
+    "toStudent": "Talabamisiz? Telefon raqamingiz bilan kiring",
+    "toStaff": "Xodimmisiz? Login bilan kiring"
+  },
+  "footer": {
+    "privacyNotice": "Ushbu tizimda talabalarning shaxsiy ma'lumotlari mavjud. Parolni tashqariga oshkor qilmang."
+  },
+  "staffForm": {
+    "usernameLabel": "Login",
+    "submit": "Kirish"
+  },
+  "studentForm": {
+    "mobileLabel": "Telefon raqami",
+    "phoneStep": {
+      "continueButton": "Davom etish",
+      "accessRequestLink": "Raqamingizni topolmayapsizmi? Kirish uchun so'rov yuboring"
+    },
+    "passwordStep": {
+      "createPasswordLabel": "Parol yarating",
+      "minLengthHint": "Parol kamida 5 ta belgidan iborat bo'lishi kerak.",
+      "createSubmit": "Ro'yxatdan o'tishni yakunlash",
+      "loginSubmit": "Kirish"
+    }
+  },
+  "accessRequestForm": {
+    "intro": "Agar raqamingiz topilmasa, ism va tug'ilgan sanangiz orqali administratordan hisobingizni bog'lashni so'rashingiz mumkin.",
+    "nameLabel": "F.I.Sh.",
+    "birthDateLabel": "Tug'ilgan sana",
+    "mobileLabel": "Telefon raqami",
+    "submitButton": "So'rov yuborish",
+    "submittedNotice": "So'rovingiz qabul qilindi. Administrator tasdiqlagach, tizimga kira olasiz."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "addStudent": {
+    "title": "Talaba qo'shish",
+    "subtitle": "Talaba raqami va ism majburiy. Qolganini keyinroq jadvalda to'ldirish mumkin.",
+    "nationalityLabel": "Fuqaroligi",
+    "facultyLabel": "Fakultet",
+    "gradSchoolLabel": "Magistratura maktabi"
+  },
+  "consult": {
+    "titleWithName": "Maslahat yozuvi · {{name}}",
+    "majorMissing": "Mutaxassislik kiritilmagan",
+    "newRecord": "Yangi maslahat yozuvi",
+    "editRecord": "Maslahat yozuvini tahrirlash",
+    "dateLabel": "Sana",
+    "methodLabel": "Usul",
+    "counselorLabel": "Mas'ul xodim",
+    "categoriesLabel": "Bo'limlar (bir nechtasini tanlash mumkin)",
+    "contentLabel": "Tafsilotlar",
+    "resultLabel": "Chora / Natija",
+    "cancelEdit": "Tahrirlashni bekor qilish",
+    "saveChanges": "O'zgarishlarni saqlash",
+    "addRecord": "Yozuv qo'shish",
+    "saveHint": "Saqlash uchun sana va kamida bitta bo'limni tanlang.",
+    "historyTitle": "Yozuvlar tarixi",
+    "historyCount": "({{count}} ta)",
+    "noRecords": "Hozircha maslahat yozuvlari yo'q.",
+    "confirmDelete": "Ushbu maslahat yozuvini o'chirasizmi?",
+    "resultPrefix": "Chora/Natija · ",
+    "updatedToast": "Maslahat yozuvi yangilandi.",
+    "createdToast": "Maslahat yozuvi qo'shildi.",
+    "deletedToast": "Maslahat yozuvi o'chirildi."
+  },
+  "tuition": {
+    "statusLabel": "Holati",
+    "autoBadge": "avtomatik",
+    "totalLabel": "Jami (KRW)",
+    "termLabel": "{{n}}-muddat",
+    "noteLabel": "Izoh",
+    "totalPaid": "Jami to'langan {{amount}} von",
+    "shortOfTotal": " · umumiy summadan {{amount}} von kam",
+    "overTotal": "Bo'lib to'lovlar yig'indisi umumiy summadan {{amount}} vonga ko'p."
+  }
+}

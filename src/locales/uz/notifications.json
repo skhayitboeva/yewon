@@ -1,0 +1,27 @@
+{
+  "accessRequests": {
+    "title": "Kirish so'rovlari",
+    "loading": "Yuklanmoqda…",
+    "empty": "Kutilayotgan so'rovlar yo'q.",
+    "noMatch": "Mos keluvchi talaba topilmadi.",
+    "selectStudent": "Bog'lanadigan talabani tanlang",
+    "noPhone": "Telefon raqami yo'q",
+    "selectStudentRequired": "Bog'lanadigan talabani tanlang.",
+    "approvedToast": "Tasdiqlandi.",
+    "rejectedToast": "Rad etildi.",
+    "rejectButton": "Rad etish",
+    "approveButton": "Tasdiqlash"
+  },
+  "broadcast": {
+    "title": "Telegram orqali xabar yuborish",
+    "levelLabel": "Bosqich",
+    "enrollStatusLabel": "O'quv holati",
+    "messageLabel": "Xabar",
+    "messageRequired": "Xabar matnini kiriting.",
+    "sentCount": "Yuborildi",
+    "failedCount": "Muvaffaqiyatsiz",
+    "sendButton": "Telegram orqali yuborish",
+    "telegramOnlyNote": "Faqat Telegramni bog'lagan talabalarga yuboriladi.",
+    "completedToast": "Yuborish yakunlandi."
+  }
+}

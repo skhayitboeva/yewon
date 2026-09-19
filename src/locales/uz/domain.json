@@ -1,0 +1,38 @@
+{
+  "level": { "undergraduate": "Bakalavriat", "graduate": "Magistratura" },
+  "studentType": { "new": "Yangi talaba", "continuing": "Davom etayotgan talaba" },
+  "gender": { "male": "Erkak", "female": "Ayol" },
+  "enrollStatus": {
+    "enrolled": "O'qimoqda",
+    "leave": "Akademik ta'til",
+    "reinstated": "Tiklangan",
+    "dismissed": "Chetlashtirilgan",
+    "graduated": "Bitirgan",
+    "withdrawn": "O'z xohishi bilan chetlashgan",
+    "deleted": "O'chirilgan"
+  },
+  "admissionType": { "new": "Yangi qabul", "transfer": "Ko'chirib qabul qilingan", "readmission": "Qayta qabul" },
+  "course": { "none": "Mavjud emas", "masters": "Magistratura kursi", "doctoral": "Doktorantura kursi" },
+  "tuitionStatus": { "paidInFull": "To'liq to'langan", "partial": "Qisman to'langan", "unpaid": "To'lanmagan" },
+  "consultCategory": {
+    "tuition": "Kontrakt to'lovi",
+    "attendance": "Davomat",
+    "visa": "Viza",
+    "academic": "O'quv jarayoni (davomat bilan)",
+    "urgent": "Shoshilinch",
+    "other": "Boshqa"
+  },
+  "consultMethod": {
+    "inPerson": "Yuzma-yuz",
+    "phone": "Telefon orqali",
+    "kakaoTalk": "KakaoTalk",
+    "email": "Elektron pochta",
+    "other": "Boshqa"
+  },
+  "absenceBucket": {
+    "good": "Yaxshi (0 marta)",
+    "a1": "1 marta yo'q",
+    "a23": "2–3 marta yo'q",
+    "a4": "4+ marta yo'q (F xavfi)"
+  }
+}

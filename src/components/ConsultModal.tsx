@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Modal } from "./Modal";
 import { api, ApiError } from "../api";
-import { useLang } from "../i18n";
+import { tError } from "../i18n";
+import { useDomainLabel } from "../i18n/domainLabels";
 import {
   CONSULT_CATEGORIES,
   CONSULT_METHODS,
@@ -34,7 +36,8 @@ export function ConsultModal({
   readOnly?: boolean;
 }) {
   const qc = useQueryClient();
-  const { lang, t, tLevel } = useLang();
+  const { t } = useTranslation(["modals", "common"]);
+  const domain = useDomainLabel();
   const [form, setForm] = useState({ ...BLANK });
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -59,23 +62,26 @@ export function ConsultModal({
         : api.createConsultation(payload);
     },
     onSuccess: () => {
-      onToast("ok", editingId ? t("상담 기록을 수정했습니다.") : t("상담 기록을 추가했습니다."));
+      onToast(
+        "ok",
+        editingId ? t("modals:consult.updatedToast") : t("modals:consult.createdToast")
+      );
       setForm({ ...BLANK });
       setEditingId(null);
       invalidate();
     },
     onError: (err) =>
-      onToast("error", err instanceof ApiError ? t(err.message) : t("저장에 실패했습니다.")),
+      onToast("error", err instanceof ApiError ? tError(err.message) : tError("저장에 실패했습니다.")),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => api.deleteConsultation(id),
     onSuccess: () => {
-      onToast("ok", t("상담 기록을 삭제했습니다."));
+      onToast("ok", t("modals:consult.deletedToast"));
       invalidate();
     },
     onError: (err) =>
-      onToast("error", err instanceof ApiError ? t(err.message) : t("삭제에 실패했습니다.")),
+      onToast("error", err instanceof ApiError ? tError(err.message) : tError("삭제에 실패했습니다.")),
   });
 
   function toggleCategory(category: ConsultCategory) {
@@ -103,13 +109,13 @@ export function ConsultModal({
 
   return (
     <Modal
-      title={lang === "en" ? `Consultation Record · ${student.nameKo}` : `상담 기록 · ${student.nameKo}`}
-      subtitle={`${student.studentId} · ${tLevel(student.level)} · ${student.major || t("전공 미입력")}`}
+      title={t("modals:consult.titleWithName", { name: student.nameKo })}
+      subtitle={`${student.studentId} · ${domain.level(student.level)} · ${student.major || t("modals:consult.majorMissing")}`}
       onClose={onClose}
       width="max-w-4xl"
       footer={
         <button className="btn" onClick={onClose}>
-          {t("닫기")}
+          {t("common:actions.close")}
         </button>
       }
     >
@@ -117,12 +123,12 @@ export function ConsultModal({
       {!readOnly && (
       <div className="card bg-plane p-4">
         <h3 className="text-sm font-bold">
-          {editingId ? t("상담 기록 수정") : t("새 상담 기록")}
+          {editingId ? t("modals:consult.editRecord") : t("modals:consult.newRecord")}
         </h3>
 
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
           <div>
-            <label className="label">{t("일자")}</label>
+            <label className="label">{t("modals:consult.dateLabel")}</label>
             <input
               type="date"
               className="field"
@@ -131,7 +137,7 @@ export function ConsultModal({
             />
           </div>
           <div>
-            <label className="label">{t("상담 방법")}</label>
+            <label className="label">{t("modals:consult.methodLabel")}</label>
             <select
               className="field"
               value={form.method}
@@ -139,13 +145,13 @@ export function ConsultModal({
             >
               {CONSULT_METHODS.map((m) => (
                 <option key={m} value={m}>
-                  {t(m)}
+                  {domain.consultMethod(m)}
                 </option>
               ))}
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="label">{t("담당자")}</label>
+            <label className="label">{t("modals:consult.counselorLabel")}</label>
             <input
               className="field"
               value={form.counselor}
@@ -155,7 +161,7 @@ export function ConsultModal({
         </div>
 
         <fieldset className="mt-3">
-          <legend className="label">{t("상담 분야 (복수 선택)")}</legend>
+          <legend className="label">{t("modals:consult.categoriesLabel")}</legend>
           <div className="flex flex-wrap gap-2">
             {CONSULT_CATEGORIES.map((c) => {
               const on = form.categories.includes(c);
@@ -171,7 +177,7 @@ export function ConsultModal({
                     checked={on}
                     onChange={() => toggleCategory(c)}
                   />
-                  {t(c)}
+                  {domain.consultCategory(c)}
                 </label>
               );
             })}
@@ -180,7 +186,7 @@ export function ConsultModal({
 
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="label">{t("상담 내용")}</label>
+            <label className="label">{t("modals:consult.contentLabel")}</label>
             <textarea
               className="field min-h-[96px]"
               value={form.content}
@@ -188,7 +194,7 @@ export function ConsultModal({
             />
           </div>
           <div>
-            <label className="label">{t("조치 / 결과")}</label>
+            <label className="label">{t("modals:consult.resultLabel")}</label>
             <textarea
               className="field min-h-[96px]"
               value={form.result}
@@ -206,7 +212,7 @@ export function ConsultModal({
                 setForm({ ...BLANK });
               }}
             >
-              {t("수정 취소")}
+              {t("modals:consult.cancelEdit")}
             </button>
           )}
           <button
@@ -214,30 +220,25 @@ export function ConsultModal({
             disabled={!canSave || save.isPending}
             onClick={() => save.mutate()}
           >
-            {save.isPending ? t("저장 중…") : editingId ? t("수정 저장") : t("기록 추가")}
+            {save.isPending ? "Loading…" : editingId ? t("modals:consult.saveChanges") : t("modals:consult.addRecord")}
           </button>
         </div>
         {!canSave && (
-          <p className="mt-2 text-right text-xs text-muted">
-            {t("일자와 상담 분야를 선택해야 저장할 수 있습니다.")}
-          </p>
+          <p className="mt-2 text-right text-xs text-muted">{t("modals:consult.saveHint")}</p>
         )}
       </div>
       )}
 
       {/* ---------------------------------------------------------- 이력 */}
       <h3 className="mt-5 text-sm font-bold">
-        {lang === "en" ? "Record History" : "기록 이력"}{" "}
-        <span className="text-muted">
-          ({rows.length}
-          {lang === "en" ? "" : "건"})
-        </span>
+        {t("modals:consult.historyTitle")}{" "}
+        <span className="text-muted">{t("modals:consult.historyCount", { count: rows.length })}</span>
       </h3>
 
       {isLoading ? (
-        <p className="mt-3 text-sm text-muted">{t("불러오는 중…")}</p>
+        <p className="mt-3 text-sm text-muted">{t("common:states.loading")}</p>
       ) : rows.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">{t("아직 상담 기록이 없습니다.")}</p>
+        <p className="mt-3 text-sm text-muted">{t("modals:consult.noRecords")}</p>
       ) : (
         <ul className="mt-3 space-y-3">
           {rows.map((row) => (
@@ -245,25 +246,27 @@ export function ConsultModal({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="nums text-sm font-bold">{row.date}</span>
-                  {row.method && <span className="chip bg-plane text-ink2">{t(row.method)}</span>}
+                  {row.method && (
+                    <span className="chip bg-plane text-ink2">{domain.consultMethod(row.method)}</span>
+                  )}
                   {row.categories.map((c) => (
                     <span key={c} className="chip bg-[#eef3fa] text-brand">
-                      {t(c)}
+                      {domain.consultCategory(c)}
                     </span>
                   ))}
                 </div>
                 {!readOnly && (
                   <div className="flex gap-1">
                     <button className="btn px-2 py-1 text-xs" onClick={() => startEdit(row)}>
-                      {t("수정")}
+                      {t("common:actions.edit")}
                     </button>
                     <button
                       className="btn px-2 py-1 text-xs text-critical"
                       onClick={() => {
-                        if (window.confirm(t("이 상담 기록을 삭제할까요?"))) remove.mutate(row._id);
+                        if (window.confirm(t("modals:consult.confirmDelete"))) remove.mutate(row._id);
                       }}
                     >
-                      {t("삭제")}
+                      {t("common:actions.delete")}
                     </button>
                   </div>
                 )}
@@ -274,15 +277,13 @@ export function ConsultModal({
               )}
               {row.result && (
                 <p className="mt-1.5 whitespace-pre-wrap text-sm text-ink2">
-                  <span className="font-semibold">
-                    {lang === "en" ? "Action/Outcome · " : "조치/결과 · "}
-                  </span>
+                  <span className="font-semibold">{t("modals:consult.resultPrefix")}</span>
                   {row.result}
                 </p>
               )}
               {row.counselor && (
                 <p className="mt-1 text-xs text-muted">
-                  {t("담당자")} {row.counselor}
+                  {t("modals:consult.counselorLabel")} {row.counselor}
                 </p>
               )}
             </li>

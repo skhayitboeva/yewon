@@ -1,0 +1,38 @@
+{
+  "sections": {
+    "allStudents": "Barcha talabalar",
+    "allStudentsNote": "Talabalar ro'yxatini shu shart bilan ochish uchun kartani bosing",
+    "tuition": "Kontrakt to'lovi",
+    "attendance": "Davomat",
+    "consultations": "Maslahatlar",
+    "consultationsNote": "Bo'lim bo'yicha yozuvlar soni (bitta yozuv bir nechta bo'limga tegishli bo'lishi mumkin)"
+  },
+  "cards": {
+    "allStudentsLabel": "Barcha talabalar",
+    "undergradContinuing": "Bakalavriat · Davom etayotgan",
+    "undergradNew": "Bakalavriat · Yangi ({{semester}})",
+    "gradContinuing": "Magistratura · Davom etayotgan",
+    "gradNew": "Magistratura · Yangi ({{semester}})",
+    "semesterLabel": "{{year}}-{{term}}-semestr"
+  },
+  "tuition": {
+    "billed": "Hisoblangan",
+    "collected": "Yig'ilgan",
+    "outstanding": "Qarzdorlik",
+    "won": "{{amount}} von",
+    "ofTotal": "umumiy hisobning {{percent}}%",
+    "paymentStatus": "To'lov holati",
+    "partialNote": "Qisman to'lagan talabalar bo'yicha",
+    "termPayment": "{{n}}-muddat to'lovi"
+  },
+  "attendance": {
+    "status": "Davomat holati",
+    "urgentNote": "4 va undan ortiq marta yo'q bo'lganlar uchun zudlik bilan maslahat kerak"
+  },
+  "consult": {
+    "recent": "So'nggi maslahatlar",
+    "noRecords": "Yozuvlar yo'q."
+  },
+  "loadError": "Statistikani yuklab bo'lmadi.",
+  "loading": "Yuklanmoqda…"
+}

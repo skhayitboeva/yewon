@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { api, ApiError } from "../api";
-import { useLang } from "../i18n";
+import { tError } from "../i18n";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const MIN_PASSWORD_LENGTH = 5;
 const MOBILE_MAX_DIGITS = 11;
@@ -24,7 +26,7 @@ export function Login({
   telegram?: TelegramLinkProps;
 }) {
   const [mode, setMode] = useState<Mode>("staff");
-  const { t } = useLang();
+  const { t } = useTranslation("login");
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -33,14 +35,17 @@ export function Login({
   return (
     <div className="flex min-h-full items-center justify-center p-6">
       <div className="card w-full max-w-sm p-6 shadow-sm">
-        <h1 className="text-lg font-bold">{t("예원예술대학교")}</h1>
-        <p className="mt-1 text-sm text-muted">{t("유학생 관리 시스템")}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-bold">{t("brand.university")}</h1>
+            <p className="mt-1 text-sm text-muted">{t("brand.subtitle")}</p>
+          </div>
+          <LanguageSwitcher className="border border-line text-ink" />
+        </div>
 
         {telegram ? (
           <>
-            <p className="mt-4 text-xs leading-relaxed text-muted">
-              {t("처음 사용하시면 학교에 등록된 휴대전화 번호로 본인 확인이 필요합니다.")}
-            </p>
+            <p className="mt-4 text-xs leading-relaxed text-muted">{t("telegram.verifyNotice")}</p>
             <StudentLoginForm onSuccess={onSuccess} telegram={telegram} />
           </>
         ) : mode === "staff" ? (
@@ -55,15 +60,11 @@ export function Login({
             className="mt-4 w-full text-center text-xs font-semibold text-brand hover:underline"
             onClick={() => switchMode(mode === "staff" ? "student" : "staff")}
           >
-            {mode === "staff"
-              ? t("학생이신가요? 휴대전화 번호로 로그인")
-              : t("직원이신가요? 아이디로 로그인")}
+            {mode === "staff" ? t("modeSwitch.toStudent") : t("modeSwitch.toStaff")}
           </button>
         )}
 
-        <p className="mt-4 text-xs leading-relaxed text-muted">
-          {t("학생 개인정보가 포함된 시스템입니다. 비밀번호를 외부에 공유하지 마세요.")}
-        </p>
+        <p className="mt-4 text-xs leading-relaxed text-muted">{t("footer.privacyNotice")}</p>
       </div>
     </div>
   );
@@ -74,7 +75,7 @@ function StaffLoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const { t } = useLang();
+  const { t } = useTranslation(["login", "common"]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -94,7 +95,7 @@ function StaffLoginForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={submit} className="mt-6">
       <label className="label" htmlFor="username">
-        {t("아이디")}
+        {t("login:staffForm.usernameLabel")}
       </label>
       <input
         id="username"
@@ -107,7 +108,7 @@ function StaffLoginForm({ onSuccess }: { onSuccess: () => void }) {
       />
 
       <label className="label mt-3" htmlFor="password">
-        {t("비밀번호")}
+        {t("common:fields.password")}
       </label>
       <input
         id="password"
@@ -120,12 +121,12 @@ function StaffLoginForm({ onSuccess }: { onSuccess: () => void }) {
 
       {error && (
         <p role="alert" className="mt-3 text-sm font-semibold text-critical">
-          {t(error)}
+          {tError(error)}
         </p>
       )}
 
       <button type="submit" disabled={busy || !username || !password} className="btn btn-primary mt-5 w-full py-2">
-        {busy ? t("확인 중…") : t("로그인")}
+        {busy ? "Loading…" : t("login:staffForm.submit")}
       </button>
     </form>
   );
@@ -145,7 +146,7 @@ function StudentLoginForm({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [requesting, setRequesting] = useState(false);
-  const { t } = useLang();
+  const { t } = useTranslation(["login", "common"]);
 
   if (requesting) {
     return <AccessRequestForm initialMobile={mobile} onBack={() => setRequesting(false)} />;
@@ -196,7 +197,7 @@ function StudentLoginForm({
     return (
       <form onSubmit={submitPhone} className="mt-6">
         <label className="label" htmlFor="mobile">
-          {t("휴대전화 번호")}
+          {t("login:studentForm.mobileLabel")}
         </label>
         <input
           id="mobile"
@@ -211,12 +212,12 @@ function StudentLoginForm({
 
         {error && (
           <p role="alert" className="mt-3 text-sm font-semibold text-critical">
-            {t(error)}
+            {tError(error)}
           </p>
         )}
 
         <button type="submit" disabled={busy || !mobile} className="btn btn-primary mt-5 w-full py-2">
-          {busy ? t("확인 중…") : t("확인")}
+          {busy ? "Loading…" : t("login:studentForm.phoneStep.continueButton")}
         </button>
 
         <button
@@ -224,7 +225,7 @@ function StudentLoginForm({
           className="mt-3 w-full text-center text-xs font-semibold text-brand hover:underline"
           onClick={() => setRequesting(true)}
         >
-          {t("번호를 찾을 수 없으신가요? 접속 요청하기")}
+          {t("login:studentForm.phoneStep.accessRequestLink")}
         </button>
       </form>
     );
@@ -234,11 +235,11 @@ function StudentLoginForm({
 
   return (
     <form onSubmit={submitPassword} className="mt-6">
-      <label className="label">{t("휴대전화 번호")}</label>
+      <label className="label">{t("login:studentForm.mobileLabel")}</label>
       <p className="field bg-plane text-muted">{mobile}</p>
 
       <label className="label mt-3" htmlFor="student-password">
-        {needsPassword ? t("비밀번호 만들기") : t("비밀번호")}
+        {needsPassword ? t("login:studentForm.passwordStep.createPasswordLabel") : t("common:fields.password")}
       </label>
       <input
         id="student-password"
@@ -251,13 +252,13 @@ function StudentLoginForm({
       />
       {needsPassword && (
         <p className={`mt-1 text-xs ${passwordTooShort ? "text-critical" : "text-muted"}`}>
-          {t("비밀번호는 5자 이상이어야 합니다.")}
+          {t("login:studentForm.passwordStep.minLengthHint")}
         </p>
       )}
 
       {error && (
         <p role="alert" className="mt-3 text-sm font-semibold text-critical">
-          {t(error)}
+          {tError(error)}
         </p>
       )}
 
@@ -266,11 +267,15 @@ function StudentLoginForm({
         disabled={busy || !password || (needsPassword && password.length < MIN_PASSWORD_LENGTH)}
         className="btn btn-primary mt-5 w-full py-2"
       >
-        {busy ? t("확인 중…") : needsPassword ? t("가입 완료") : t("로그인")}
+        {busy
+          ? "Loading…"
+          : needsPassword
+            ? t("login:studentForm.passwordStep.createSubmit")
+            : t("login:studentForm.passwordStep.loginSubmit")}
       </button>
 
       <button type="button" className="mt-3 w-full text-center text-xs font-semibold text-ink2 hover:underline" onClick={goBack}>
-        {t("뒤로")}
+        {t("common:actions.back")}
       </button>
     </form>
   );
@@ -286,7 +291,7 @@ function AccessRequestForm({ initialMobile, onBack }: { initialMobile: string; o
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
-  const { t } = useLang();
+  const { t } = useTranslation(["login", "common"]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -305,15 +310,13 @@ function AccessRequestForm({ initialMobile, onBack }: { initialMobile: string; o
   if (done) {
     return (
       <div className="mt-6">
-        <p className="text-sm text-ink2">
-          {t("요청이 접수되었습니다. 관리자 확인 후 로그인할 수 있습니다.")}
-        </p>
+        <p className="text-sm text-ink2">{t("login:accessRequestForm.submittedNotice")}</p>
         <button
           type="button"
           className="mt-4 w-full text-center text-xs font-semibold text-ink2 hover:underline"
           onClick={onBack}
         >
-          {t("뒤로")}
+          {t("common:actions.back")}
         </button>
       </div>
     );
@@ -321,17 +324,15 @@ function AccessRequestForm({ initialMobile, onBack }: { initialMobile: string; o
 
   return (
     <form onSubmit={submit} className="mt-6">
-      <p className="text-xs leading-relaxed text-muted">
-        {t("등록된 번호를 찾지 못했을 때 이름과 생년월일로 관리자에게 연결을 요청할 수 있습니다.")}
-      </p>
+      <p className="text-xs leading-relaxed text-muted">{t("login:accessRequestForm.intro")}</p>
 
       <label className="label mt-3" htmlFor="req-name">
-        {t("성명")}
+        {t("login:accessRequestForm.nameLabel")}
       </label>
       <input id="req-name" autoFocus className="field" value={nameKo} onChange={(e) => setNameKo(e.target.value)} />
 
       <label className="label mt-3" htmlFor="req-birth">
-        {t("생년월일")}
+        {t("login:accessRequestForm.birthDateLabel")}
       </label>
       <input
         id="req-birth"
@@ -342,7 +343,7 @@ function AccessRequestForm({ initialMobile, onBack }: { initialMobile: string; o
       />
 
       <label className="label mt-3" htmlFor="req-mobile">
-        {t("휴대전화 번호")}
+        {t("login:accessRequestForm.mobileLabel")}
       </label>
       <input
         id="req-mobile"
@@ -355,7 +356,7 @@ function AccessRequestForm({ initialMobile, onBack }: { initialMobile: string; o
 
       {error && (
         <p role="alert" className="mt-3 text-sm font-semibold text-critical">
-          {t(error)}
+          {tError(error)}
         </p>
       )}
 
@@ -364,11 +365,11 @@ function AccessRequestForm({ initialMobile, onBack }: { initialMobile: string; o
         disabled={busy || !nameKo || !birthDate || !mobile}
         className="btn btn-primary mt-5 w-full py-2"
       >
-        {busy ? t("확인 중…") : t("요청 보내기")}
+        {busy ? "Loading…" : t("login:accessRequestForm.submitButton")}
       </button>
 
       <button type="button" className="mt-3 w-full text-center text-xs font-semibold text-ink2 hover:underline" onClick={onBack}>
-        {t("뒤로")}
+        {t("common:actions.back")}
       </button>
     </form>
   );
