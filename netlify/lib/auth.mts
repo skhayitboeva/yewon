@@ -38,6 +38,10 @@ export async function verifyPassword(password: string, stored: string): Promise<
 
 /* ------------------------------------------------------------------- session */
 
+/** `netlify dev` serves plain http://, where a Secure cookie is silently dropped
+ * unless the host is exactly "localhost" (e.g. 127.0.0.1 doesn't qualify). */
+const IS_LOCAL_DEV = process.env.NETLIFY_DEV === "true";
+
 export async function issueCookie(): Promise<string> {
   const token = await new SignJWT({ role: "staff" })
     .setProtectedHeader({ alg: "HS256" })
@@ -49,14 +53,21 @@ export async function issueCookie(): Promise<string> {
     `${COOKIE_NAME}=${token}`,
     "Path=/",
     "HttpOnly",
-    "Secure",
+    ...(IS_LOCAL_DEV ? [] : ["Secure"]),
     "SameSite=Lax",
     `Max-Age=${MAX_AGE_SECONDS}`,
   ].join("; ");
 }
 
 export function clearCookie(): string {
-  return `${COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+  return [
+    `${COOKIE_NAME}=`,
+    "Path=/",
+    "HttpOnly",
+    ...(IS_LOCAL_DEV ? [] : ["Secure"]),
+    "SameSite=Lax",
+    "Max-Age=0",
+  ].join("; ");
 }
 
 function readCookie(req: Request, name: string): string | null {
