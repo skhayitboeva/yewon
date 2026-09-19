@@ -4,6 +4,12 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # MONGODB_DB is just a database name, not a credential — but its value
+  # ("yewon") is also a substring of this project's own name, so it shows up
+  # throughout the docs/README and trips Netlify's secrets scanner as a false
+  # positive. The real credential-bearing vars (MONGODB_URI, JWT_SECRET,
+  # APP_PASSWORD_HASH_*, TELEGRAM_BOT_TOKEN) stay scanned.
+  SECRETS_SCAN_OMIT_KEYS = "MONGODB_DB"
 
 [functions]
   node_bundler = "esbuild"
