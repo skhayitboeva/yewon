@@ -45,4 +45,5 @@ export const COLLECTIONS = {
   settings: "settings",
   info: "info",
   loginAttempts: "login_attempts",
+  accessRequests: "access_requests",
 } as const;

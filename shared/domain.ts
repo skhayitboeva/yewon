@@ -91,8 +91,26 @@ export interface Student {
   /** Fields the student has edited themselves via Profile — the Excel import
    * skips these so it doesn't silently revert a self-service edit. */
   selfEdited?: Partial<Record<"nameKo" | "address" | "mobile", boolean>>;
+  /** Set once the student links their Telegram account via the Mini App. */
+  telegramId?: string;
+  telegramUsername?: string;
+  telegramLinkedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** Submitted from the Mini App by someone the phone-lookup couldn't find —
+ * lets a student without a phone number on file get one added by an admin. */
+export interface AccessRequest {
+  _id: string;
+  nameKo: string;
+  birthDate: string;
+  mobile: string;
+  status: "pending" | "approved" | "rejected";
+  candidates: Student[];
+  createdAt: string;
+  resolvedAt?: string;
+  studentId?: string;
 }
 
 export interface Consultation {

@@ -1,4 +1,5 @@
 import type {
+  AccessRequest,
   Consultation,
   Info,
   Role,
@@ -14,10 +15,31 @@ export class ApiError extends Error {
   }
 }
 
+/** Telegram's WebView/iframe don't reliably carry cookies, so a session
+ * obtained via /api/telegram/auth or /api/telegram/link is held here (and
+ * mirrored to sessionStorage so a reload inside the Mini App survives)
+ * instead. The web app's staff/student login is unaffected — it keeps using
+ * the cookie the server already sets. */
+const TOKEN_STORAGE_KEY = "yewon_tg_token";
+let bearerToken: string | null = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+
+export function setBearerToken(token: string | null): void {
+  bearerToken = token;
+  try {
+    if (token) sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+    else sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch {
+    /* private-mode storage may throw — the in-memory token still works for this tab */
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = init?.body ? { "content-type": "application/json" } : {};
+  if (bearerToken) headers.authorization = `Bearer ${bearerToken}`;
+
   const res = await fetch(path, {
     credentials: "same-origin",
-    headers: init?.body ? { "content-type": "application/json" } : undefined,
+    headers,
     ...init,
   });
 
@@ -57,6 +79,29 @@ export const api = {
     request<{ ok?: true; needsPassword?: boolean }>("/api/student-login", {
       method: "POST",
       body: JSON.stringify(password ? { mobile, password } : { mobile }),
+    }),
+
+  telegramAuth: (initData: string) =>
+    request<{ linked: boolean; token?: string }>("/api/telegram/auth", {
+      method: "POST",
+      body: JSON.stringify({ initData }),
+    }),
+  telegramLink: (initData: string, mobile: string, password: string) =>
+    request<{ token: string }>("/api/telegram/link", {
+      method: "POST",
+      body: JSON.stringify({ initData, mobile, password }),
+    }),
+  submitAccessRequest: (body: { nameKo: string; birthDate: string; mobile: string }) =>
+    request<{ ok: true }>("/api/access-requests", { method: "POST", body: JSON.stringify(body) }),
+
+  accessRequests: () => request<{ requests: AccessRequest[] }>("/api/access-requests?status=pending"),
+  resolveAccessRequest: (id: string, body: { action: "approve"; targetId: string } | { action: "reject" }) =>
+    request<{ ok: true }>(`/api/access-requests/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+
+  broadcast: (body: { message: string; filters?: Record<string, string>; cursor?: string; limit?: number }) =>
+    request<{ sent: number; failed: number; nextCursor: string | null }>("/api/broadcast", {
+      method: "POST",
+      body: JSON.stringify(body),
     }),
 
   stats: () => request<Stats>("/api/stats"),

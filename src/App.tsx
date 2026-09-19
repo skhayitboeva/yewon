@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "./api";
+import { api, setBearerToken } from "./api";
 import { Login } from "./components/Login";
+import { getInitData, isTelegram, prepareTelegramViewport } from "./telegram";
 import { Dashboard, type DrillFilter } from "./components/Dashboard";
 import { StudentsTable } from "./components/StudentsTable";
 import { Info } from "./components/Info";
 import { MyDetails } from "./components/MyDetails";
 import { Profile } from "./components/Profile";
+import { Notifications } from "./components/Notifications";
 import { Toasts } from "./components/Toast";
 import { useToasts } from "./hooks";
 import { useLang } from "./i18n";
 import type { Role } from "../shared/domain";
 
-type Tab = "dashboard" | "students" | "details" | "profile" | "info";
+type Tab = "dashboard" | "students" | "details" | "profile" | "info" | "notifications";
 
 const TABS_BY_ROLE: Record<Role, { tabs: Tab[]; default: Tab }> = {
-  admin: { tabs: ["dashboard", "students", "info", "profile"], default: "dashboard" },
+  admin: { tabs: ["dashboard", "students", "info", "notifications", "profile"], default: "dashboard" },
   manager: { tabs: ["dashboard", "students", "info", "profile"], default: "dashboard" },
   user: { tabs: ["details", "profile", "info"], default: "details" },
 };
@@ -26,6 +28,7 @@ const TAB_LABELS: Record<Tab, string> = {
   details: "내 정보",
   profile: "프로필",
   info: "안내",
+  notifications: "알림",
 };
 
 export default function App() {
@@ -50,7 +53,24 @@ export default function App() {
   }
 
   useEffect(() => {
-    refreshAuth();
+    async function bootstrap() {
+      // Telegram's WebView/iframe don't reliably carry cookies, so a Telegram
+      // session lives in a bearer token instead — see src/api.ts. If this
+      // Telegram account was linked before, this resolves it with no phone
+      // or password; otherwise api.me() below just reports "not authed" and
+      // Login renders the link flow (Telegram is never a plain login form).
+      if (isTelegram()) {
+        prepareTelegramViewport();
+        try {
+          const r = await api.telegramAuth(getInitData());
+          if (r.linked && r.token) setBearerToken(r.token);
+        } catch {
+          /* fall through — Login will show the link flow */
+        }
+      }
+      await refreshAuth();
+    }
+    bootstrap();
   }, []);
 
   if (authed === null) {
@@ -58,7 +78,22 @@ export default function App() {
   }
 
   if (!authed) {
-    return <Login onSuccess={refreshAuth} />;
+    return (
+      <Login
+        onSuccess={refreshAuth}
+        telegram={
+          isTelegram()
+            ? {
+                initData: getInitData(),
+                onLinked: (token) => {
+                  setBearerToken(token);
+                  refreshAuth();
+                },
+              }
+            : undefined
+        }
+      />
+    );
   }
 
   const roleTabs = role ? TABS_BY_ROLE[role] : null;
@@ -78,7 +113,12 @@ export default function App() {
   }
 
   async function logout() {
-    await api.logout().catch(() => {});
+    if (isTelegram()) {
+      // No cookie to clear here — just drop the bearer token this tab holds.
+      setBearerToken(null);
+    } else {
+      await api.logout().catch(() => {});
+    }
     qc.clear();
     setAuthed(false);
     setRole(null);
@@ -135,6 +175,7 @@ export default function App() {
         {effectiveTab === "details" && <MyDetails onToast={push} />}
         {effectiveTab === "profile" && <Profile role={role!} onToast={push} />}
         {effectiveTab === "info" && <Info role={role} onToast={push} />}
+        {effectiveTab === "notifications" && <Notifications onToast={push} />}
       </main>
 
       <Toasts toasts={toasts} onDismiss={dismiss} />

@@ -77,6 +77,7 @@ const EN: Record<string, string> = {
   안내: "Info",
   "내 정보": "My Details",
   프로필: "Profile",
+  알림: "Notifications",
 
   // ---- my details / profile -------------------------------------------------
   "학적 정보": "Academic Info",
@@ -216,6 +217,48 @@ const EN: Record<string, string> = {
   대면: "In person",
   전화: "Phone",
   카카오톡: "KakaoTalk",
+
+  // ---- telegram -------------------------------------------------
+  "처음 사용하시면 학교에 등록된 휴대전화 번호로 본인 확인이 필요합니다.":
+    "First time here? Verify with the phone number the school has on file for you.",
+  "이 텔레그램 계정은 이미 다른 학생과 연결되어 있습니다.": "This Telegram account is already linked to another student.",
+  "텔레그램 인증 정보가 올바르지 않습니다.": "Invalid Telegram authentication data.",
+  "텔레그램 인증이 만료되었습니다. 앱을 다시 열어주세요.": "Telegram authentication expired. Please reopen the app.",
+  "텔레그램 사용자 정보를 읽을 수 없습니다.": "Could not read Telegram user info.",
+  "번호를 찾을 수 없으신가요? 접속 요청하기": "Can't find your number? Request access",
+  "등록된 번호를 찾지 못했을 때 이름과 생년월일로 관리자에게 연결을 요청할 수 있습니다.":
+    "If your number isn't found, you can request the admin link your account using your name and date of birth.",
+  "요청 보내기": "Send request",
+  "요청에 실패했습니다.": "Request failed.",
+  "요청이 접수되었습니다. 관리자 확인 후 로그인할 수 있습니다.":
+    "Request submitted. You'll be able to log in once an admin confirms it.",
+
+  // ---- notifications (admin: access requests + broadcast) ----------------
+  "접속 요청": "Access Requests",
+  "대기 중인 요청이 없습니다.": "No pending requests.",
+  "일치하는 학생을 찾지 못했습니다.": "No matching student found.",
+  "연결할 학생 선택": "Select a student to link",
+  "전화번호 없음": "No phone on file",
+  거절: "Reject",
+  승인: "Approve",
+  "연결할 학생을 선택하세요.": "Select a student to link.",
+  "거절했습니다.": "Rejected.",
+  "승인했습니다.": "Approved.",
+  "처리에 실패했습니다.": "Failed to process.",
+  "요청을 찾을 수 없습니다.": "Request not found.",
+  "이미 처리된 요청입니다.": "This request has already been resolved.",
+  "텔레그램 알림 보내기": "Send Telegram Notification",
+  메시지: "Message",
+  "메시지를 입력하세요.": "Enter a message.",
+  "메시지가 너무 깁니다.": "Message is too long.",
+  발송: "Sent",
+  실패: "Failed",
+  "발송 중…": "Sending…",
+  "텔레그램으로 보내기": "Send via Telegram",
+  "텔레그램을 연결한 학생에게만 발송됩니다.": "Only sent to students who have linked Telegram.",
+  "발송을 완료했습니다.": "Send complete.",
+  "발송에 실패했습니다.": "Send failed.",
+  "잘못된 커서입니다.": "Invalid cursor.",
 
   // ---- server error messages (surfaced verbatim via ApiError.message) ----
   "잘못된 ID 입니다.": "Invalid ID.",

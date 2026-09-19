@@ -304,6 +304,13 @@
 | DELETE | `/api/consultations/:id` | 삭제 |
 | GET | `/api/settings` · PUT | 현재 학기 설정 |
 | GET | `/api/export.csv` | 현재 필터 기준 CSV |
+| GET | `/api/my/details` | 세션의 학생 본인 record + 상담 이력 (`sid` 로만 조회, 파라미터로 다른 학생 조회 불가) |
+| PATCH | `/api/my/profile` | 본인 nameKo/address/mobile/password만 수정 가능한 좁은 스키마 |
+| POST | `/api/telegram/auth` | `{initData}` → 이미 연결된 텔레그램이면 세션 토큰 발급 |
+| POST | `/api/telegram/link` | `{initData, mobile, password}` → 학생 인증 후 그 텔레그램 계정을 연결 |
+| POST | `/api/access-requests` | `{nameKo, birthDate, mobile}` 접속 요청 제출 — **미인증**, IP 레이트리밋 필수 |
+| GET · PATCH | `/api/access-requests(/:id)` | 대기 목록(+ 후보 학생) 조회 · 승인(`targetId` 지정)/거절 (admin) |
+| POST | `/api/broadcast` | `{message, filters, cursor?}` → 텔레그램 연결 학생에게 페이지 단위 발송 (admin) |
 
 **서버 공통** — MongoDB 연결은 모듈 스코프에 캐시(Lambda 컨테이너 재사용), 요청마다 새 연결을 만들지 않는다. 입력은 Zod로 검증하고, 스키마에 없는 필드는 버린다.
 
@@ -324,6 +331,19 @@
 - 권한: `admin`은 전체 읽기/쓰기, `manager`는 대시보드·학생·상담 전체 읽기(쓰기·CSV 내보내기 불가), `user`는 대시보드·안내 조회만 가능.
 - 로그인 시도 제한: 동일 IP 10회 실패 시 15분 차단 (직원 로그인과 학생 로그인이 같은 카운터를 공유, MongoDB에 기록).
 - 개인정보(생년월일·주소·연락처)가 있으므로 `noindex` 메타 + `robots.txt` 차단.
+- **텔레그램 미니앱**: 같은 세션 JWT를 쓰지만 쿠키 대신 `Authorization: Bearer` 헤더로 전달한다
+  (텔레그램 WebView/Desktop 아이프레임에서 쿠키가 안정적으로 유지되지 않음). `getSession()`이
+  헤더를 우선 확인하고 없으면 쿠키로 폴백하므로, 기존 `requireAuth`/`requireRole`/`requireStudent`
+  가드는 변경 없이 그대로 동작한다. 최초 연결은 `requestContact` 없이 학교에 등록된 번호를
+  직접 입력받는다 (텔레그램 번호가 다른 나라 번호일 수 있어 매칭이 안 될 수 있음). `initData`는
+  HMAC-SHA256으로 서버에서 검증하고 `auth_date` 24시간 초과 시 재사용을 거부한다.
+- **접속 요청**: 학번을 기억 못 하는 학생을 위해 이름+생년월일+휴대전화로 신청하면(미인증
+  엔드포인트, IP 레이트리밋 필수) admin이 이름+생년월일이 일치하는 후보 학생 목록에서 확인 후
+  승인 — 그 번호가 학생 record에 저장된다(`selfEdited`는 설정하지 않음, 관리자 입력이므로).
+- **알림 발송**: 무료 Netlify 플랜은 함수 10초 제한이고 백그라운드 함수를 지원하지 않으므로,
+  `/api/broadcast`는 한 번에 최대 50명씩만 보내고 `nextCursor`를 반환한다 — 관리자 화면이 그
+  커서를 반복 호출해 전체 발송을 완료한다(페이지를 닫으면 중단됨). 봇 차단(403)이 확인되면
+  해당 학생의 `telegramId`를 제거해 다음 발송에서 자동으로 제외한다.
 
 ---
 

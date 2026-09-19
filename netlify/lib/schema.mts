@@ -121,6 +121,31 @@ export const studentLoginSchema = z.object({
   password: z.string().min(1).max(200).optional(),
 });
 
+export const telegramAuthSchema = z.object({
+  initData: z.string().min(1).max(4000),
+});
+
+export const telegramLinkSchema = z.object({
+  initData: z.string().min(1).max(4000),
+  mobile: z.string().trim().regex(/^\d{1,11}$/, "휴대전화 번호를 정확히 입력하세요."),
+  password: z.string().min(1).max(200),
+});
+
+/** Submitted by someone not yet in the system — deliberately tiny and
+ * unauthenticated-safe. No free text: just the three fields needed to find
+ * a matching student record for an admin to confirm. */
+export const accessRequestSchema = z.object({
+  nameKo: str(80).min(1, "성명을 입력하세요."),
+  birthDate: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, "생년월일은 YYYY-MM-DD 형식이어야 합니다."),
+  mobile: z.string().trim().regex(/^\d{1,11}$/, "휴대전화 번호를 정확히 입력하세요."),
+});
+
+export const accessRequestResolveSchema = z.discriminatedUnion("action", [
+  // targetId is the matched Student's Mongo _id, not their studentId (학번).
+  z.object({ action: z.literal("approve"), targetId: z.string().min(1) }),
+  z.object({ action: z.literal("reject") }),
+]);
+
 /** Narrow on purpose — a student may only ever touch these fields on their own
  * record. Never reuse studentPatchSchema here: it permits enrollStatus,
  * tuition, studentId etc., which would let a student rewrite their own

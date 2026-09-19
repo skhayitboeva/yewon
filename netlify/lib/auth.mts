@@ -44,12 +44,19 @@ export async function verifyPassword(password: string, stored: string): Promise<
  * unless the host is exactly "localhost" (e.g. 127.0.0.1 doesn't qualify). */
 const IS_LOCAL_DEV = process.env.NETLIFY_DEV === "true";
 
-export async function issueCookie(role: Role, sid?: string): Promise<string> {
-  const token = await new SignJWT(sid ? { role, sid } : { role })
+/** The raw session JWT. The web app carries it in a cookie; the Telegram Mini
+ * App carries the same token in an Authorization header, because Telegram's
+ * WebView drops cookies and Desktop runs Mini Apps in an iframe. */
+export async function signToken(role: Role, sid?: string): Promise<string> {
+  return new SignJWT(sid ? { role, sid } : { role })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE_SECONDS}s`)
     .sign(secret());
+}
+
+export async function issueCookie(role: Role, sid?: string): Promise<string> {
+  const token = await signToken(role, sid);
 
   return [
     `${COOKIE_NAME}=${token}`,
@@ -83,8 +90,16 @@ function readCookie(req: Request, name: string): string | null {
   return null;
 }
 
+function bearerToken(req: Request): string | null {
+  const header = req.headers.get("authorization");
+  if (!header) return null;
+  const match = /^Bearer\s+(.+)$/i.exec(header.trim());
+  return match ? match[1] : null;
+}
+
 export async function getSession(req: Request): Promise<{ role: Role; sid?: string } | null> {
-  const token = readCookie(req, COOKIE_NAME);
+  // Header first so the Telegram Mini App works where cookies don't survive.
+  const token = bearerToken(req) ?? readCookie(req, COOKIE_NAME);
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });

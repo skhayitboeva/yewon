@@ -32,6 +32,10 @@ await students.createIndex({ major: 1 }, { name: "major" });
 await students.createIndex({ "tuition.status": 1 }, { name: "tuition_status" });
 await students.createIndex({ "attendance.absences": 1 }, { name: "absences" });
 await students.createIndex({ admissionDate: 1 }, { name: "admissionDate" });
+await students.createIndex(
+  { telegramId: 1 },
+  { unique: true, sparse: true, name: "uniq_telegramId" }
+);
 
 const consultations = db.collection("consultations");
 await consultations.createIndex({ studentId: 1, date: -1 }, { name: "student_date" });
@@ -41,6 +45,9 @@ await consultations.createIndex({ categories: 1 }, { name: "categories" });
 const attempts = db.collection("login_attempts");
 await attempts.createIndex({ at: 1 }, { expireAfterSeconds: 3600, name: "ttl_at" });
 await attempts.createIndex({ ip: 1, at: -1 }, { name: "ip_at" });
+
+const accessRequests = db.collection("access_requests");
+await accessRequests.createIndex({ status: 1, createdAt: -1 }, { name: "status_createdAt" });
 
 console.log("인덱스 생성 완료");
 

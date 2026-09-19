@@ -48,13 +48,23 @@ npm run hash-password -- "manager 비밀번호"
 # 세션 서명 키 생성
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 # → JWT_SECRET 에 붙여넣기
+
+# 텔레그램 봇 토큰 (@BotFather 에서 발급) — 미니앱 로그인/연결 + 알림 발송에 사용
+# TELEGRAM_BOT_TOKEN="..."
 ```
 
 로그인 아이디에 따라 권한이 갈립니다: `admin`(전체 읽기/쓰기), `manager`(전체 읽기 전용,
 CSV 내보내기 제외). 학생은 별도 계정이 없고, 로그인 화면에서 "학생이신가요?" 를 눌러
 본인 휴대전화 번호로 로그인합니다 — 처음 로그인할 때 비밀번호(5자 이상)를 직접 설정하고,
-다음부터는 그 번호+비밀번호로 로그인합니다(`user` 권한, 대시보드·안내만 조회). 학생이
+다음부터는 그 번호+비밀번호로 로그인합니다(`user` 권한, 내 정보·프로필·안내만 조회). 학생이
 비밀번호를 잊으면 학생 표에서 관리자가 "비밀번호 초기화" 버튼으로 초기화해줄 수 있습니다.
+
+같은 학생 로그인을 텔레그램 미니앱으로도 열 수 있습니다 (`@BotFather` 의 메뉴 버튼에
+배포 URL을 등록). 최초 진입 시에는 마찬가지로 휴대전화 번호+비밀번호로 본인 확인 후
+텔레그램 계정이 연결되고, 이후에는 앱을 열기만 해도 자동 로그인됩니다. 휴대전화 번호가
+등록되지 않은 학생은 로그인 화면에서 "접속 요청하기" 로 이름·생년월일·번호를 제출할 수
+있고, admin 계정의 "알림" 탭에서 승인하면 그 번호가 학생 정보에 등록됩니다. 같은 탭에서
+텔레그램을 연결한 학생들에게 필터 조건으로 알림 메시지를 보낼 수 있습니다.
 
 ## 5. 초기 데이터 넣기 (개발용 551명)
 
@@ -93,6 +103,7 @@ netlify deploy --prod
 | `APP_PASSWORD_HASH_ADMIN` | 4단계에서 생성한 admin `scrypt$...` |
 | `APP_PASSWORD_HASH_MANAGER` | 4단계에서 생성한 manager `scrypt$...` |
 | `JWT_SECRET` | 4단계에서 생성한 랜덤 문자열 |
+| `TELEGRAM_BOT_TOKEN` | @BotFather 에서 발급받은 봇 토큰 (선택 — 미니앱/알림 기능에 필요) |
 
 등록 후 한 번 더 `netlify deploy --prod`.
 
@@ -149,6 +160,13 @@ data/students.seed.json  참고 HTML에서 추출한 551명 (개발용)
 | PATCH · DELETE | `/api/consultations/:id` | 상담 수정 · 삭제 |
 | GET · PUT | `/api/settings` | 현재 학기 |
 | GET | `/api/export.csv` | 현재 필터 기준 CSV |
+| GET | `/api/my/details` | 내 학적·등록금·출결·상담 이력 (학생 본인) |
+| PATCH | `/api/my/profile` | 내 이름·주소·휴대전화·비밀번호 수정 (학생 본인) |
+| POST | `/api/telegram/auth` | 텔레그램 미니앱 재진입 시 세션 토큰 발급 |
+| POST | `/api/telegram/link` | 휴대전화+비밀번호로 텔레그램 계정 최초 연결 |
+| POST | `/api/access-requests` | 접속 요청 제출 (미인증) |
+| GET · PATCH | `/api/access-requests(/:id)` | 접속 요청 목록 · 승인/거절 (admin 전용) |
+| POST | `/api/broadcast` | 텔레그램 알림 발송, 한 번에 일부씩 (admin 전용) |
 
 ## 보안 메모
 
