@@ -5,12 +5,28 @@ import { Login } from "./components/Login";
 import { Dashboard, type DrillFilter } from "./components/Dashboard";
 import { StudentsTable } from "./components/StudentsTable";
 import { Info } from "./components/Info";
+import { MyDetails } from "./components/MyDetails";
+import { Profile } from "./components/Profile";
 import { Toasts } from "./components/Toast";
 import { useToasts } from "./hooks";
 import { useLang } from "./i18n";
 import type { Role } from "../shared/domain";
 
-type Tab = "dashboard" | "students" | "info";
+type Tab = "dashboard" | "students" | "details" | "profile" | "info";
+
+const TABS_BY_ROLE: Record<Role, { tabs: Tab[]; default: Tab }> = {
+  admin: { tabs: ["dashboard", "students", "info", "profile"], default: "dashboard" },
+  manager: { tabs: ["dashboard", "students", "info", "profile"], default: "dashboard" },
+  user: { tabs: ["details", "profile", "info"], default: "details" },
+};
+
+const TAB_LABELS: Record<Tab, string> = {
+  dashboard: "대시보드",
+  students: "전체 학생",
+  details: "내 정보",
+  profile: "프로필",
+  info: "안내",
+};
 
 export default function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -45,7 +61,9 @@ export default function App() {
     return <Login onSuccess={refreshAuth} />;
   }
 
-  const effectiveTab: Tab = role === "user" && tab === "students" ? "dashboard" : tab;
+  const roleTabs = role ? TABS_BY_ROLE[role] : null;
+  const effectiveTab: Tab =
+    roleTabs && roleTabs.tabs.includes(tab) ? tab : (roleTabs?.default ?? "dashboard");
 
   function openStudents(filter: DrillFilter) {
     const params = new URLSearchParams(filter as Record<string, string>);
@@ -101,28 +119,22 @@ export default function App() {
 
       <nav className="sticky top-0 z-20 border-b border-line bg-surface px-4 py-2 sm:px-6">
         <div className="mx-auto flex max-w-[1500px] gap-1.5">
-          <button className={tabClass("dashboard")} onClick={() => setTab("dashboard")}>
-            {t("대시보드")}
-          </button>
-          {role !== "user" && (
-            <button className={tabClass("students")} onClick={() => setTab("students")}>
-              {t("전체 학생")}
+          {roleTabs?.tabs.map((tb) => (
+            <button key={tb} className={tabClass(tb)} onClick={() => setTab(tb)}>
+              {t(TAB_LABELS[tb])}
             </button>
-          )}
-          <button className={tabClass("info")} onClick={() => setTab("info")}>
-            {t("안내")}
-          </button>
+          ))}
         </div>
       </nav>
 
       <main>
-        {effectiveTab === "dashboard" ? (
-          <Dashboard onDrill={openStudents} />
-        ) : effectiveTab === "students" ? (
+        {effectiveTab === "dashboard" && <Dashboard onDrill={openStudents} />}
+        {effectiveTab === "students" && (
           <StudentsTable key={tableKey} onToast={push} initialFilter={drill} role={role!} />
-        ) : (
-          <Info role={role} onToast={push} />
         )}
+        {effectiveTab === "details" && <MyDetails onToast={push} />}
+        {effectiveTab === "profile" && <Profile role={role!} onToast={push} />}
+        {effectiveTab === "info" && <Info role={role} onToast={push} />}
       </main>
 
       <Toasts toasts={toasts} onDismiss={dismiss} />

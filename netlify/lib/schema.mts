@@ -121,6 +121,20 @@ export const studentLoginSchema = z.object({
   password: z.string().min(1).max(200).optional(),
 });
 
+/** Narrow on purpose — a student may only ever touch these fields on their own
+ * record. Never reuse studentPatchSchema here: it permits enrollStatus,
+ * tuition, studentId etc., which would let a student rewrite their own
+ * academic record. */
+export const studentProfileSchema = z
+  .object({
+    nameKo: str(80).min(1).optional(),
+    address: str(400).optional(),
+    mobile: z.string().trim().regex(/^\d{1,11}$/, "휴대전화 번호를 정확히 입력하세요.").optional(),
+    currentPassword: z.string().min(1).max(200).optional(),
+    newPassword: z.string().min(5).max(200).optional(),
+  })
+  .strict();
+
 /** Turns `{tuition: {term1: 1}}` into `{"tuition.term1": 1}` so $set is surgical. */
 export function flattenSet(obj: Record<string, unknown>, prefix = ""): Record<string, unknown> {
   const out: Record<string, unknown> = {};

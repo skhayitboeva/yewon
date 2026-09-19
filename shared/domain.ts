@@ -88,6 +88,9 @@ export interface Student {
   consultCount?: number;
   /** Whether this student has self-set a portal login password. Never the hash itself. */
   hasPassword?: boolean;
+  /** Fields the student has edited themselves via Profile — the Excel import
+   * skips these so it doesn't silently revert a self-service edit. */
+  selfEdited?: Partial<Record<"nameKo" | "address" | "mobile", boolean>>;
   createdAt?: string;
   updatedAt?: string;
 }

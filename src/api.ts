@@ -95,4 +95,19 @@ export const api = {
 
   info: () => request<Info>("/api/info"),
   saveInfo: (body: Info) => request<Info>("/api/info", { method: "PUT", body: JSON.stringify(body) }),
+
+  myDetails: () =>
+    request<{
+      student: Student;
+      consultations: Consultation[];
+      consultCount: number;
+      lastConsultedAt: string | null;
+    }>("/api/my/details"),
+  updateMyProfile: (body: {
+    nameKo?: string;
+    address?: string;
+    mobile?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) => request<Student>("/api/my/profile", { method: "PATCH", body: JSON.stringify(body) }),
 };

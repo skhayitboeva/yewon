@@ -4,6 +4,7 @@ import { requireRole } from "../lib/auth.mts";
 import { HttpError, handler, json, readJson } from "../lib/http.mts";
 import { parseOrThrow, studentCreateSchema } from "../lib/schema.mts";
 import { buildStudentQuery } from "../lib/query.mts";
+import { withoutPasswordHash } from "../lib/students.mts";
 import { EMPTY_ATTENDANCE, EMPTY_TUITION, tuitionPaid } from "../../shared/domain.ts";
 
 export default handler(async (req) => {
@@ -37,14 +38,10 @@ export default handler(async (req) => {
     const countBy = new Map(counts.map((c) => [c._id as string, c.n as number]));
 
     return json({
-      rows: rows.map((r) => {
-        const { passwordHash, ...rest } = r as Record<string, unknown>;
-        return {
-          ...rest,
-          consultCount: countBy.get(r.studentId as string) || 0,
-          hasPassword: Boolean(passwordHash),
-        };
-      }),
+      rows: rows.map((r) => ({
+        ...withoutPasswordHash(r as Record<string, unknown>),
+        consultCount: countBy.get(r.studentId as string) || 0,
+      })),
       total,
       page,
       limit,

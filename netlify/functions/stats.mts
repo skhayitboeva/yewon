@@ -1,6 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { COLLECTIONS, coll } from "../lib/db.mts";
-import { requireAuth } from "../lib/auth.mts";
+import { requireRole } from "../lib/auth.mts";
 import { handler, json } from "../lib/http.mts";
 
 const gtZero = (field: string) => ({ $cond: [{ $gt: [`$${field}`, 0] }, 1, 0] });
@@ -20,7 +20,7 @@ const inRange = (min: number, max: number | null) => ({
 });
 
 export default handler(async (req) => {
-  await requireAuth(req);
+  await requireRole(req, ["admin", "manager"]);
   const students = await coll(COLLECTIONS.students);
   const consultations = await coll(COLLECTIONS.consultations);
   const settingsColl = await coll(COLLECTIONS.settings);

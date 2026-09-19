@@ -223,16 +223,30 @@ if (count > 0) {
 
 /* ---------------------------------------------------------------- 이관 */
 if (mode === "replace") {
+  // Also wipes every student's password and selfEdited protection — students
+  // must set a new portal password after a --mode=replace import.
   const { deletedCount } = await students.deleteMany({});
-  console.log(`기존 ${deletedCount}건 삭제`);
+  console.log(`기존 ${deletedCount}건 삭제 (학생 비밀번호·자가수정 보호 항목도 함께 삭제됨)`);
 }
+
+// A student may have edited nameKo/address/mobile themselves via Profile —
+// don't let the Excel import silently revert those fields.
+const selfEditedById = new Map(
+  (
+    await students
+      .find({ studentId: { $in: ids } }, { projection: { studentId: 1, selfEdited: 1 } })
+      .toArray()
+  ).map((d) => [d.studentId, d.selfEdited || {}])
+);
 
 const now = new Date();
 const ops = docs
   .filter((d) => mode !== "insert-only" || !existingSet.has(d.studentId))
   .map((d) => {
     const $set = { updatedAt: now };
+    const selfEdited = selfEditedById.get(d.studentId) || {};
     for (const f of ACADEMIC_FIELDS) {
+      if (selfEdited[f]) continue;
       if (d[f] !== undefined && d[f] !== "") $set[f] = d[f];
     }
     return {

@@ -11,6 +11,7 @@ import {
 } from "../lib/auth.mts";
 import { HttpError, handler, json, readJson } from "../lib/http.mts";
 import { parseOrThrow, studentLoginSchema } from "../lib/schema.mts";
+import { mobileMatchExpr } from "../lib/students.mts";
 
 const MIN_PASSWORD_LENGTH = 5;
 
@@ -22,17 +23,9 @@ export default handler(async (req) => {
 
   const { mobile, password } = parseOrThrow(studentLoginSchema, await readJson(req));
   const students = await coll(COLLECTIONS.students);
-  // Stored numbers aren't consistently digits-only (imported data keeps "010-1234-5678"
-  // dashes; numbers entered/edited through the app are digits-only) — compare with
-  // dashes stripped on both sides instead of relying on exact string equality.
   const student = await students.findOne({
     enrollStatus: { $ne: "삭제" },
-    $expr: {
-      $eq: [
-        { $replaceAll: { input: { $ifNull: ["$mobile", ""] }, find: "-", replacement: "" } },
-        mobile,
-      ],
-    },
+    ...mobileMatchExpr(mobile),
   });
 
   if (!student) {
@@ -54,7 +47,10 @@ export default handler(async (req) => {
       { $set: { passwordHash, updatedAt: new Date() } }
     );
     await clearLoginFailures(ip);
-    return json({ ok: true }, { headers: { "set-cookie": await issueCookie("user") } });
+    return json(
+      { ok: true },
+      { headers: { "set-cookie": await issueCookie("user", String(student._id)) } }
+    );
   }
 
   const ok = await verifyPassword(password, student.passwordHash);
@@ -64,7 +60,10 @@ export default handler(async (req) => {
   }
 
   await clearLoginFailures(ip);
-  return json({ ok: true }, { headers: { "set-cookie": await issueCookie("user") } });
+  return json(
+    { ok: true },
+    { headers: { "set-cookie": await issueCookie("user", String(student._id)) } }
+  );
 });
 
 export const config: Config = { path: "/api/student-login" };

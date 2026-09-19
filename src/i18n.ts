@@ -75,6 +75,31 @@ const EN: Record<string, string> = {
   대시보드: "Dashboard",
   "전체 학생": "All Students",
   안내: "Info",
+  "내 정보": "My Details",
+  프로필: "Profile",
+
+  // ---- my details / profile -------------------------------------------------
+  "학적 정보": "Academic Info",
+  "1차": "Term 1",
+  "2차": "Term 2",
+  "3차": "Term 3",
+  "4차": "Term 4",
+  "상담 이력": "Consultation History",
+  결석: "Absences",
+  "상담 횟수": "Consultations",
+  "최근 상담일": "Last consulted",
+  "정보를 불러오지 못했습니다.": "Failed to load your details.",
+  역할: "Role",
+  관리자: "Admin",
+  매니저: "Manager",
+  "직원 계정 비밀번호는 서버 환경변수로 관리되며, 이 화면에서 변경할 수 없습니다.":
+    "Staff account passwords are managed via server environment configuration and cannot be changed here.",
+  "새 비밀번호": "New password",
+  "변경하지 않으려면 비워두세요": "Leave blank to keep unchanged",
+  "현재 비밀번호": "Current password",
+  "휴대전화 번호 또는 비밀번호를 변경하려면 현재 비밀번호가 필요합니다.":
+    "Changing your phone number or password requires your current password.",
+  "프로필을 저장했습니다.": "Profile saved.",
 
   // ---- login -------------------------------------------------
   "로그인에 실패했습니다.": "Login failed.",
@@ -203,6 +228,9 @@ const EN: Record<string, string> = {
   "로그인 시도가 너무 많습니다. 15분 후에 다시 시도하세요.":
     "Too many login attempts. Try again in 15 minutes.",
   "비밀번호가 올바르지 않습니다.": "Incorrect password.",
+  "현재 비밀번호를 입력하세요.": "Enter your current password.",
+  "현재 비밀번호가 올바르지 않습니다.": "Current password is incorrect.",
+  "이미 사용 중인 휴대전화 번호입니다.": "That phone number is already in use.",
   "학생을 찾을 수 없습니다.": "Student not found.",
   "선택된 학생이 없습니다.": "No students selected.",
   "로그인이 필요합니다.": "Login required.",

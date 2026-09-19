@@ -4,17 +4,12 @@ import { COLLECTIONS, coll } from "../lib/db.mts";
 import { requireRole } from "../lib/auth.mts";
 import { HttpError, handler, json, readJson } from "../lib/http.mts";
 import { flattenSet, parseOrThrow, studentPatchSchema } from "../lib/schema.mts";
+import { withoutPasswordHash } from "../lib/students.mts";
 import { EMPTY_TUITION, tuitionPaid } from "../../shared/domain.ts";
 
 function oid(id: string): ObjectId {
   if (!ObjectId.isValid(id)) throw new HttpError(400, "잘못된 ID 입니다.");
   return new ObjectId(id);
-}
-
-/** Never let the self-service login's password hash reach the browser. */
-function withoutPasswordHash(doc: Record<string, unknown>): Record<string, unknown> {
-  const { passwordHash, ...rest } = doc;
-  return { ...rest, hasPassword: Boolean(passwordHash) };
 }
 
 export default handler(async (req, ctx: Context) => {

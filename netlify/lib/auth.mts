@@ -44,8 +44,8 @@ export async function verifyPassword(password: string, stored: string): Promise<
  * unless the host is exactly "localhost" (e.g. 127.0.0.1 doesn't qualify). */
 const IS_LOCAL_DEV = process.env.NETLIFY_DEV === "true";
 
-export async function issueCookie(role: Role): Promise<string> {
-  const token = await new SignJWT({ role })
+export async function issueCookie(role: Role, sid?: string): Promise<string> {
+  const token = await new SignJWT(sid ? { role, sid } : { role })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE_SECONDS}s`)
@@ -83,12 +83,12 @@ function readCookie(req: Request, name: string): string | null {
   return null;
 }
 
-export async function getSession(req: Request): Promise<{ role: Role } | null> {
+export async function getSession(req: Request): Promise<{ role: Role; sid?: string } | null> {
   const token = readCookie(req, COOKIE_NAME);
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
-    return { role: payload.role as Role };
+    return { role: payload.role as Role, sid: payload.sid as string | undefined };
   } catch {
     return null;
   }
@@ -109,6 +109,16 @@ export async function requireRole(req: Request, allowed: Role[]): Promise<Role> 
   if (!session) throw new HttpError(401, "로그인이 필요합니다.");
   if (!allowed.includes(session.role)) throw new HttpError(403, "권한이 없습니다.");
   return session.role;
+}
+
+/** Call at the top of a "my own data" function. Returns the caller's student _id.
+ * Sessions issued before student sessions carried a `sid` have none — those
+ * students must simply log in again to pick up an identified session. */
+export async function requireStudent(req: Request): Promise<string> {
+  const session = await getSession(req);
+  if (!session) throw new HttpError(401, "로그인이 필요합니다.");
+  if (session.role !== "user" || !session.sid) throw new HttpError(403, "권한이 없습니다.");
+  return session.sid;
 }
 
 export function clientIp(req: Request): string {
