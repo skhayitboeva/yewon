@@ -3,7 +3,11 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # Node 20's bundled OpenSSL fails the TLS handshake against MongoDB Atlas
+  # from Netlify's Lambda runtime ("tlsv1 alert internal error" /
+  # MongoServerSelectionError) — a documented Node-runtime issue, not a
+  # network/allowlist problem. Netlify's own current default is Node 24.
+  NODE_VERSION = "22"
   # MONGODB_DB is just a database name, not a credential — but its value
   # ("yewon") is also a substring of this project's own name, so it shows up
   # throughout the docs/README and trips Netlify's secrets scanner as a false
