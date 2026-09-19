@@ -1,9 +1,12 @@
 import type {
   Consultation,
+  Info,
+  Role,
   Settings,
   Stats,
   Student,
 } from "../shared/domain";
+import { getLang, translate } from "./i18n";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -19,10 +22,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    let message = `요청이 실패했습니다 (${res.status})`;
+    let message =
+      getLang() === "en" ? `Request failed (${res.status})` : `요청이 실패했습니다 (${res.status})`;
     try {
       const body = await res.json();
-      if (body?.error) message = body.error;
+      if (body?.error) message = translate(body.error);
     } catch {
       /* non-JSON error body */
     }
@@ -42,13 +46,18 @@ export interface StudentPage {
 }
 
 export const api = {
-  me: () => request<{ authed: boolean }>("/api/me"),
-  login: (password: string) =>
+  me: () => request<{ authed: boolean; role: Role | null }>("/api/me"),
+  login: (username: string, password: string) =>
     request<{ ok: true }>("/api/login", {
       method: "POST",
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ username, password }),
     }),
   logout: () => request<{ ok: true }>("/api/logout", { method: "POST" }),
+  studentLogin: (mobile: string, password?: string) =>
+    request<{ ok?: true; needsPassword?: boolean }>("/api/student-login", {
+      method: "POST",
+      body: JSON.stringify(password ? { mobile, password } : { mobile }),
+    }),
 
   stats: () => request<Stats>("/api/stats"),
   facets: () => request<{ majors: string[]; cohorts: string[] }>("/api/facets"),
@@ -60,16 +69,8 @@ export const api = {
     request<Student>(`/api/students/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteStudent: (id: string) =>
     request<{ ok: true }>(`/api/students/${id}`, { method: "DELETE" }),
-  bulkPatch: (body: {
-    ids?: string[];
-    all?: boolean;
-    filter?: Record<string, string>;
-    set: Record<string, string>;
-  }) =>
-    request<{ matched: number; modified: number }>("/api/students-bulk", {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
+  resetStudentPassword: (id: string) =>
+    request<{ ok: true }>(`/api/students/${id}/reset-password`, { method: "POST" }),
 
   consultations: (studentId: string) =>
     request<{ rows: Consultation[] }>(
@@ -91,4 +92,7 @@ export const api = {
   settings: () => request<Settings>("/api/settings"),
   saveSettings: (body: Settings) =>
     request<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(body) }),
+
+  info: () => request<Info>("/api/info"),
+  saveInfo: (body: Info) => request<Info>("/api/info", { method: "PUT", body: JSON.stringify(body) }),
 };

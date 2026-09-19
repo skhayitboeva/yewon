@@ -2,6 +2,8 @@ import { SignJWT, jwtVerify } from "jose";
 import { scrypt as _scrypt, randomBytes, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { HttpError } from "./http.mts";
+import { COLLECTIONS, coll } from "./db.mts";
+import type { Role } from "../../shared/domain.ts";
 
 const scrypt = promisify(_scrypt) as (
   password: string,
@@ -42,8 +44,8 @@ export async function verifyPassword(password: string, stored: string): Promise<
  * unless the host is exactly "localhost" (e.g. 127.0.0.1 doesn't qualify). */
 const IS_LOCAL_DEV = process.env.NETLIFY_DEV === "true";
 
-export async function issueCookie(): Promise<string> {
-  const token = await new SignJWT({ role: "staff" })
+export async function issueCookie(role: Role): Promise<string> {
+  const token = await new SignJWT({ role })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE_SECONDS}s`)
@@ -81,20 +83,32 @@ function readCookie(req: Request, name: string): string | null {
   return null;
 }
 
-export async function isAuthed(req: Request): Promise<boolean> {
+export async function getSession(req: Request): Promise<{ role: Role } | null> {
   const token = readCookie(req, COOKIE_NAME);
-  if (!token) return false;
+  if (!token) return null;
   try {
-    await jwtVerify(token, secret(), { algorithms: ["HS256"] });
-    return true;
+    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
+    return { role: payload.role as Role };
   } catch {
-    return false;
+    return null;
   }
 }
 
-/** Call at the top of every protected function. */
+export async function isAuthed(req: Request): Promise<boolean> {
+  return (await getSession(req)) !== null;
+}
+
+/** Call at the top of every protected function that allows any logged-in role. */
 export async function requireAuth(req: Request): Promise<void> {
   if (!(await isAuthed(req))) throw new HttpError(401, "로그인이 필요합니다.");
+}
+
+/** Call at the top of a function restricted to specific roles. Returns the caller's role. */
+export async function requireRole(req: Request, allowed: Role[]): Promise<Role> {
+  const session = await getSession(req);
+  if (!session) throw new HttpError(401, "로그인이 필요합니다.");
+  if (!allowed.includes(session.role)) throw new HttpError(403, "권한이 없습니다.");
+  return session.role;
 }
 
 export function clientIp(req: Request): string {
@@ -103,4 +117,30 @@ export function clientIp(req: Request): string {
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"
   );
+}
+
+/* --------------------------------------------------------------- rate limit */
+// Shared by every login surface (fixed-account login, student phone login) so
+// they draw from one IP-based failure counter instead of duplicating it.
+
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_MAX_FAILURES = 10;
+
+export async function enforceLoginRateLimit(ip: string): Promise<void> {
+  const attempts = await coll(COLLECTIONS.loginAttempts);
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+  const recent = await attempts.countDocuments({ ip, at: { $gte: since } });
+  if (recent >= RATE_LIMIT_MAX_FAILURES) {
+    throw new HttpError(429, "로그인 시도가 너무 많습니다. 15분 후에 다시 시도하세요.");
+  }
+}
+
+export async function recordLoginFailure(ip: string): Promise<void> {
+  const attempts = await coll(COLLECTIONS.loginAttempts);
+  await attempts.insertOne({ ip, at: new Date() });
+}
+
+export async function clearLoginFailures(ip: string): Promise<void> {
+  const attempts = await coll(COLLECTIONS.loginAttempts);
+  await attempts.deleteMany({ ip });
 }

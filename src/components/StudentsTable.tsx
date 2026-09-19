@@ -8,13 +8,8 @@ import { AddStudentModal } from "./AddStudentModal";
 import { ConsultModal } from "./ConsultModal";
 import { COLUMNS, DEFAULT_VISIBLE, getPath, type ColumnDef } from "./columns";
 import { useUrlState } from "../hooks";
-import {
-  ENROLL_STATUSES,
-  STUDENT_TYPES,
-  TUITION_STATUSES,
-  type Student,
-  type Tuition,
-} from "../../shared/domain";
+import { useLang } from "../i18n";
+import { type Role, type Student, type Tuition } from "../../shared/domain";
 
 const PAGE_SIZES = [25, 50, 100, 200];
 
@@ -33,17 +28,42 @@ function absenceTone(n: number): string {
   return "";
 }
 
+function TrashIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 20 20"
+      width="15"
+      height="15"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 6h12" />
+      <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6" />
+      <path d="M5.5 6l.6 9.6A1.5 1.5 0 0 0 7.6 17h4.8a1.5 1.5 0 0 0 1.5-1.4L14.5 6" />
+      <path d="M8.3 9v5" />
+      <path d="M11.7 9v5" />
+    </svg>
+  );
+}
+
 export function StudentsTable({
   onToast,
   initialFilter,
+  role,
 }: {
   onToast: (kind: "ok" | "error", text: string) => void;
   initialFilter?: Record<string, string>;
+  role: Role;
 }) {
+  const canWrite = role === "admin";
+  const { lang, t, tLevel, tEnrollStatus } = useLang();
   const [state, setState] = useUrlState({ ...DEFAULTS, ...(initialFilter ?? {}) });
   const [visible, setVisible] = useState<string[]>(DEFAULT_VISIBLE);
   const [showColumns, setShowColumns] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
   const [consultFor, setConsultFor] = useState<Student | null>(null);
   const qc = useQueryClient();
@@ -100,48 +120,34 @@ export function StudentsTable({
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(queryKey, ctx.previous);
-      onToast("error", err instanceof ApiError ? err.message : "저장에 실패했습니다.");
+      onToast("error", err instanceof ApiError ? t(err.message) : t("저장에 실패했습니다."));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stats"] });
     },
   });
 
-  const bulk = useMutation({
-    mutationFn: (set: Record<string, string>) =>
-      api.bulkPatch({ ids: [...selected], set }),
-    onSuccess: (res) => {
-      onToast("ok", `${res.modified}명을 변경했습니다.`);
-      setSelected(new Set());
-      qc.invalidateQueries({ queryKey: ["students"] });
-      qc.invalidateQueries({ queryKey: ["stats"] });
-    },
-    onError: (err) =>
-      onToast("error", err instanceof ApiError ? err.message : "일괄 변경에 실패했습니다."),
-  });
-
-  const bulkAll = useMutation({
-    mutationFn: (set: Record<string, string>) =>
-      api.bulkPatch({ all: true, filter: filterOnly(state), set }),
-    onSuccess: (res) => {
-      onToast("ok", `필터 결과 ${res.modified}명을 변경했습니다.`);
-      setSelected(new Set());
-      qc.invalidateQueries({ queryKey: ["students"] });
-      qc.invalidateQueries({ queryKey: ["stats"] });
-    },
-    onError: (err) =>
-      onToast("error", err instanceof ApiError ? err.message : "일괄 변경에 실패했습니다."),
-  });
-
-  const removeStudent = useMutation({
-    mutationFn: (id: string) => api.deleteStudent(id),
+  // Soft delete: the record stays in the database with enrollStatus "삭제"
+  // rather than being removed, so it can be filtered to or reverted later.
+  const markDeleted = useMutation({
+    mutationFn: (id: string) => api.patchStudent(id, { enrollStatus: "삭제" }),
     onSuccess: () => {
-      onToast("ok", "학생을 삭제했습니다.");
+      onToast("ok", t("학생을 삭제했습니다."));
       qc.invalidateQueries({ queryKey: ["students"] });
       qc.invalidateQueries({ queryKey: ["stats"] });
     },
     onError: (err) =>
-      onToast("error", err instanceof ApiError ? err.message : "삭제에 실패했습니다."),
+      onToast("error", err instanceof ApiError ? t(err.message) : t("삭제에 실패했습니다.")),
+  });
+
+  const resetPassword = useMutation({
+    mutationFn: (id: string) => api.resetStudentPassword(id),
+    onSuccess: () => {
+      onToast("ok", t("비밀번호를 초기화했습니다."));
+      qc.invalidateQueries({ queryKey: ["students"] });
+    },
+    onError: (err) =>
+      onToast("error", err instanceof ApiError ? t(err.message) : t("초기화에 실패했습니다.")),
   });
 
   function save(student: Student, field: string, value: unknown) {
@@ -171,17 +177,6 @@ export function StudentsTable({
   const sortMark = (col: ColumnDef) =>
     state.sort === col.field ? (state.dir === "desc" ? "▼" : "▲") : "";
 
-  /* ------------------------------------------------------------ selection */
-
-  const allOnPageSelected = rows.length > 0 && rows.every((r) => selected.has(r._id));
-
-  function toggleAllOnPage() {
-    const next = new Set(selected);
-    if (allOnPageSelected) rows.forEach((r) => next.delete(r._id));
-    else rows.forEach((r) => next.add(r._id));
-    setSelected(next);
-  }
-
   /* ---------------------------------------------------------------- render */
 
   const page = Number(state.page) || 1;
@@ -196,17 +191,19 @@ export function StudentsTable({
           onChange={(p) => setState({ ...p, page: "1" } as Record<string, string>)}
           onReset={() => setState({ ...EMPTY_FILTERS, page: "1" })}
           total={data?.total ?? 0}
-          exportHref={exportHref}
+          exportHref={canWrite ? exportHref : undefined}
         />
 
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-          <button className="btn btn-primary py-1" onClick={() => setAdding(true)}>
-            + 학생 추가
-          </button>
+          {canWrite && (
+            <button className="btn btn-primary py-1" onClick={() => setAdding(true)}>
+              + {t("학생 추가")}
+            </button>
+          )}
 
           <div className="relative">
             <button className="btn py-1" onClick={() => setShowColumns((v) => !v)}>
-              열 표시 ({cols.length}/{COLUMNS.length})
+              {lang === "en" ? "Columns" : "열 표시"} ({cols.length}/{COLUMNS.length})
             </button>
             {showColumns && (
               <div className="absolute left-0 z-30 mt-1 max-h-80 w-56 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-xl">
@@ -229,18 +226,18 @@ export function StudentsTable({
                         )
                       }
                     />
-                    {c.label}
+                    {lang === "en" ? c.labelEn : c.label}
                   </label>
                 ))}
                 <div className="mt-1 flex gap-1 border-t border-line pt-2">
                   <button className="btn flex-1 py-1 text-xs" onClick={() => setVisible(DEFAULT_VISIBLE)}>
-                    기본값
+                    {t("기본값")}
                   </button>
                   <button
                     className="btn flex-1 py-1 text-xs"
                     onClick={() => setVisible(COLUMNS.map((c) => c.key))}
                   >
-                    전체
+                    {t("전체")}
                   </button>
                 </div>
               </div>
@@ -248,7 +245,7 @@ export function StudentsTable({
           </div>
 
           <label className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-ink2">
-            페이지당
+            {lang === "en" ? "Per page" : "페이지당"}
             <select
               className="field w-auto py-1"
               value={state.limit}
@@ -262,143 +259,68 @@ export function StudentsTable({
             </select>
           </label>
         </div>
-
-        {/* ------------------------------------------------------ bulk bar */}
-        {selected.size > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-brand bg-[#eef3fa] px-3 py-2">
-            <span className="text-sm font-bold text-brand">{selected.size}명 선택됨</span>
-
-            <select
-              className="field w-auto py-1"
-              defaultValue=""
-              onChange={(e) => {
-                if (e.target.value) bulk.mutate({ studentType: e.target.value });
-                e.target.value = "";
-              }}
-            >
-              <option value="">신입/재학 지정…</option>
-              {STUDENT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}으로 변경
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="field w-auto py-1"
-              defaultValue=""
-              onChange={(e) => {
-                if (e.target.value) bulk.mutate({ enrollStatus: e.target.value });
-                e.target.value = "";
-              }}
-            >
-              <option value="">학적 변경…</option>
-              {ENROLL_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}으로 변경
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="field w-auto py-1"
-              defaultValue=""
-              onChange={(e) => {
-                if (e.target.value) bulk.mutate({ "tuition.status": e.target.value });
-                e.target.value = "";
-              }}
-            >
-              <option value="">등록금 상태 변경…</option>
-              {TUITION_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}으로 변경
-                </option>
-              ))}
-            </select>
-
-            <button className="btn py-1" onClick={() => setSelected(new Set())}>
-              선택 해제
-            </button>
-
-            {data && data.total > rows.length && (
-              <button
-                className="btn py-1"
-                onClick={() => {
-                  const type = window.prompt(
-                    `필터 결과 ${data.total}명 전체를 변경합니다.\n"신입생" 또는 "재학생" 을 입력하세요.`
-                  );
-                  if (type && STUDENT_TYPES.includes(type as any)) {
-                    bulkAll.mutate({ studentType: type });
-                  }
-                }}
-              >
-                필터 결과 {data.total}명 전체에 적용…
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ---------------------------------------------------------- table */}
       <div className="card mt-3 overflow-x-auto">
         {error ? (
           <p className="p-8 text-center text-sm text-critical">
-            목록을 불러오지 못했습니다.
+            {t("목록을 불러오지 못했습니다.")}
           </p>
         ) : (
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full table-fixed border-collapse text-sm">
             <thead>
               <tr className="border-b border-line bg-plane text-left">
-                <th className="sticky-col left-0 w-9 bg-plane px-2 py-2">
-                  <input
-                    type="checkbox"
-                    className="accent-brand"
-                    checked={allOnPageSelected}
-                    onChange={toggleAllOnPage}
-                    aria-label="이 페이지 전체 선택"
-                  />
-                </th>
                 {cols.map((col, i) => (
                   <th
                     key={col.key}
                     style={{
-                      minWidth: col.width,
-                      ...(col.sticky ? { left: 36 + cols.slice(0, i).reduce((a, c) => a + (c.sticky ? c.width : 0), 0) } : {}),
+                      width: col.width,
+                      ...(col.sticky ? { left: cols.slice(0, i).reduce((a, c) => a + (c.sticky ? c.width : 0), 0) } : {}),
                     }}
-                    className={`whitespace-nowrap px-2 py-2 text-xs font-bold text-ink2
+                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-2 py-2 text-xs font-bold text-ink2
                       ${col.align === "right" ? "text-right" : "text-left"}
-                      ${col.sticky ? "sticky-col bg-plane" : ""}`}
+                      ${col.sticky ? "sticky-col bg-plane" : ""}
+                      ${col.key === "nameEn" ? "border-r-2 border-rule" : ""}`}
                   >
                     {col.sortable ? (
                       <button
                         className="inline-flex items-center gap-1 hover:text-brand"
                         onClick={() => toggleSort(col)}
                       >
-                        {col.label}
+                        {lang === "en" ? col.labelEn : col.label}
                         <span className="text-[9px] text-brand">{sortMark(col)}</span>
                       </button>
+                    ) : lang === "en" ? (
+                      col.labelEn
                     ) : (
                       col.label
                     )}
                   </th>
                 ))}
-                <th className="w-12 px-2 py-2" />
+                {canWrite && <th className="w-12 px-2 py-2" />}
               </tr>
             </thead>
 
             <tbody>
               {isLoading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={cols.length + 2} className="p-8 text-center text-sm text-muted">
-                    불러오는 중…
+                  <td
+                    colSpan={cols.length + (canWrite ? 1 : 0)}
+                    className="p-8 text-center text-sm text-muted"
+                  >
+                    {t("불러오는 중…")}
                   </td>
                 </tr>
               )}
 
               {!isLoading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={cols.length + 2} className="p-8 text-center text-sm text-muted">
-                    조건에 맞는 학생이 없습니다.
+                  <td
+                    colSpan={cols.length + (canWrite ? 1 : 0)}
+                    className="p-8 text-center text-sm text-muted"
+                  >
+                    {t("조건에 맞는 학생이 없습니다.")}
                   </td>
                 </tr>
               )}
@@ -406,57 +328,68 @@ export function StudentsTable({
               {rows.map((student) => (
                 <tr
                   key={student._id}
-                  className={`border-b border-line bg-surface last:border-0 hover:bg-[#fafbfd]
-                    ${selected.has(student._id) ? "!bg-[#eef3fa]" : ""}`}
+                  className="border-b border-line bg-surface last:border-0 hover:bg-[#fafbfd]"
                 >
-                  <td className="sticky-col left-0 px-2 py-1.5">
-                    <input
-                      type="checkbox"
-                      className="accent-brand"
-                      checked={selected.has(student._id)}
-                      onChange={() => {
-                        const next = new Set(selected);
-                        next.has(student._id) ? next.delete(student._id) : next.add(student._id);
-                        setSelected(next);
-                      }}
-                      aria-label={`${student.nameKo} 선택`}
-                    />
-                  </td>
-
                   {cols.map((col, i) => (
                     <td
                       key={col.key}
                       style={
                         col.sticky
-                          ? { left: 36 + cols.slice(0, i).reduce((a, c) => a + (c.sticky ? c.width : 0), 0) }
+                          ? { left: cols.slice(0, i).reduce((a, c) => a + (c.sticky ? c.width : 0), 0) }
                           : undefined
                       }
                       className={`relative px-2 py-1.5 align-middle
                         ${col.align === "right" ? "text-right" : ""}
-                        ${col.sticky ? "sticky-col bg-inherit" : ""}`}
+                        ${col.sticky ? "sticky-col bg-inherit" : ""}
+                        ${col.key === "nameEn" ? "border-r-2 border-rule" : ""}`}
                     >
-                      {renderCell(col, student, save)}
+                      {renderCell(col, student, save, !canWrite)}
                     </td>
                   ))}
 
-                  <td className="px-2 py-1.5 text-right">
-                    <button
-                      title="학생 삭제"
-                      aria-label={`${student.nameKo} 삭제`}
-                      className="rounded px-1.5 py-0.5 text-muted hover:bg-[#fbeaea] hover:text-critical"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `${student.nameKo}(${student.studentId}) 학생과 상담 기록을 모두 삭제합니다. 계속할까요?`
-                          )
-                        ) {
-                          removeStudent.mutate(student._id);
-                        }
-                      }}
-                    >
-                      ×
-                    </button>
-                  </td>
+                  {canWrite && (
+                    <td className="px-2 py-1.5 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                      {student.hasPassword && (
+                        <button
+                          title={t("비밀번호 초기화")}
+                          className="rounded px-1.5 py-1 text-[11px] font-semibold text-muted hover:bg-plane hover:text-ink2"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                lang === "en"
+                                  ? `Reset the login password for ${student.nameKo} (${student.studentId})?`
+                                  : `${student.nameKo}(${student.studentId}) 학생의 비밀번호를 초기화할까요?`
+                              )
+                            ) {
+                              resetPassword.mutate(student._id);
+                            }
+                          }}
+                        >
+                          {t("비밀번호 초기화")}
+                        </button>
+                      )}
+                      <button
+                        title={lang === "en" ? "Delete student" : "학생 삭제"}
+                        aria-label={lang === "en" ? `Delete ${student.nameKo}` : `${student.nameKo} 삭제`}
+                        className="rounded p-1 text-muted hover:bg-[#fbeaea] hover:text-critical"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              lang === "en"
+                                ? `This will delete ${student.nameKo} (${student.studentId}). Continue?`
+                                : `${student.nameKo}(${student.studentId}) 학생을 삭제됩니다. 계속할까요?`
+                            )
+                          ) {
+                            markDeleted.mutate(student._id);
+                          }
+                        }}
+                      >
+                        <TrashIcon />
+                      </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -475,7 +408,7 @@ export function StudentsTable({
             disabled={page <= 1}
             onClick={() => setState({ page: String(page - 1) })}
           >
-            이전
+            {t("이전")}
           </button>
           <span className="nums px-2 text-sm text-ink2">
             {page} / {pages}
@@ -485,7 +418,7 @@ export function StudentsTable({
             disabled={page >= pages}
             onClick={() => setState({ page: String(page + 1) })}
           >
-            다음
+            {t("다음")}
           </button>
           <button
             className="btn py-1"
@@ -502,7 +435,7 @@ export function StudentsTable({
           onClose={() => setAdding(false)}
           onCreated={() => {
             setAdding(false);
-            onToast("ok", "학생을 추가했습니다.");
+            onToast("ok", t("학생을 추가했습니다."));
             qc.invalidateQueries({ queryKey: ["students"] });
             qc.invalidateQueries({ queryKey: ["stats"] });
             qc.invalidateQueries({ queryKey: ["facets"] });
@@ -515,6 +448,7 @@ export function StudentsTable({
           student={consultFor}
           onClose={() => setConsultFor(null)}
           onToast={onToast}
+          readOnly={!canWrite}
         />
       )}
     </div>
@@ -523,7 +457,8 @@ export function StudentsTable({
   function renderCell(
     col: ColumnDef,
     student: Student,
-    onSave: (s: Student, field: string, value: unknown) => void
+    onSave: (s: Student, field: string, value: unknown) => void,
+    readOnly: boolean
   ) {
     switch (col.kind) {
       case "select":
@@ -531,7 +466,11 @@ export function StudentsTable({
           <SelectCell
             value={String(getPath(student, col.field) ?? "")}
             options={col.options ?? []}
+            renderLabel={
+              col.key === "level" ? tLevel : col.key === "enrollStatus" ? tEnrollStatus : t
+            }
             onSave={(v) => onSave(student, col.field, v)}
+            readOnly={readOnly}
           />
         );
 
@@ -540,6 +479,7 @@ export function StudentsTable({
           <TuitionCell
             tuition={student.tuition}
             onSave={(p) => patch.mutate({ id: student._id, body: { tuition: p } })}
+            readOnly={readOnly}
           />
         );
 
@@ -549,7 +489,7 @@ export function StudentsTable({
             className="btn px-2 py-0.5 text-xs"
             onClick={() => setConsultFor(student)}
           >
-            상담
+            {t("상담")}
             {(student.consultCount ?? 0) > 0 && (
               <span className="nums ml-1 rounded-full bg-brand px-1.5 text-[10px] font-bold text-white">
                 {student.consultCount}
@@ -567,6 +507,7 @@ export function StudentsTable({
               kind="number"
               align="right"
               onSave={(v) => onSave(student, col.field, v)}
+              readOnly={readOnly}
             />
           </span>
         );
@@ -576,16 +517,23 @@ export function StudentsTable({
         return (
           <EditableCell
             value={String(getPath(student, col.field) ?? "")}
-            kind={col.kind === "date" ? "date" : "text"}
+            kind={
+              col.kind === "date"
+                ? "date"
+                : col.key === "mobile" || col.key === "phone"
+                  ? "phone"
+                  : "text"
+            }
             align={col.align ?? "left"}
             onSave={(v) => onSave(student, col.field, v)}
+            readOnly={readOnly}
           />
         );
     }
   }
 }
 
-/** Strips sort/page/limit so only the real filters travel to the bulk endpoint. */
+/** Strips sort/page/limit so the Filters component only sees the real filter values. */
 function filterOnly(state: Record<string, string>): Record<string, string> {
   const { sort, dir, page, limit, ...rest } = state;
   void sort;

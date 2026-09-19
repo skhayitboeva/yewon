@@ -1,36 +1,48 @@
 import type { Config } from "@netlify/functions";
-import { COLLECTIONS, coll } from "../lib/db.mts";
-import { clientIp, issueCookie, verifyPassword } from "../lib/auth.mts";
+import {
+  clearLoginFailures,
+  clientIp,
+  enforceLoginRateLimit,
+  issueCookie,
+  recordLoginFailure,
+  verifyPassword,
+} from "../lib/auth.mts";
 import { HttpError, handler, json, readJson } from "../lib/http.mts";
 import { loginSchema, parseOrThrow } from "../lib/schema.mts";
+import type { Role } from "../../shared/domain.ts";
 
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_FAILURES = 10;
+const ACCOUNTS: Record<string, { envVar: string; role: Role }> = {
+  admin: { envVar: "APP_PASSWORD_HASH_ADMIN", role: "admin" },
+  manager: { envVar: "APP_PASSWORD_HASH_MANAGER", role: "manager" },
+};
 
 export default handler(async (req) => {
   if (req.method !== "POST") throw new HttpError(405, "POST만 허용됩니다.");
 
-  const stored = process.env.APP_PASSWORD_HASH;
-  if (!stored) throw new HttpError(500, "APP_PASSWORD_HASH 환경변수가 설정되지 않았습니다.");
-
   const ip = clientIp(req);
-  const attempts = await coll(COLLECTIONS.loginAttempts);
-  const since = new Date(Date.now() - WINDOW_MS);
-  const recent = await attempts.countDocuments({ ip, at: { $gte: since } });
-  if (recent >= MAX_FAILURES) {
-    throw new HttpError(429, "로그인 시도가 너무 많습니다. 15분 후에 다시 시도하세요.");
+  await enforceLoginRateLimit(ip);
+
+  const { username, password } = parseOrThrow(loginSchema, await readJson(req));
+  const account = ACCOUNTS[username];
+  const stored = account ? process.env[account.envVar] : undefined;
+
+  if (!account || !stored) {
+    if (account && !stored) {
+      throw new HttpError(500, `${account.envVar} 환경변수가 설정되지 않았습니다.`);
+    }
+    await recordLoginFailure(ip);
+    throw new HttpError(401, "아이디 또는 비밀번호가 올바르지 않습니다.");
   }
 
-  const { password } = parseOrThrow(loginSchema, await readJson(req));
   const ok = await verifyPassword(password, stored);
 
   if (!ok) {
-    await attempts.insertOne({ ip, at: new Date() });
-    throw new HttpError(401, "비밀번호가 올바르지 않습니다.");
+    await recordLoginFailure(ip);
+    throw new HttpError(401, "아이디 또는 비밀번호가 올바르지 않습니다.");
   }
 
-  await attempts.deleteMany({ ip });
-  return json({ ok: true }, { headers: { "set-cookie": await issueCookie() } });
+  await clearLoginFailures(ip);
+  return json({ ok: true }, { headers: { "set-cookie": await issueCookie(account.role) } });
 });
 
 export const config: Config = { path: "/api/login" };

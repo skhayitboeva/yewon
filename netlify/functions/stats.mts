@@ -42,7 +42,11 @@ export default handler(async (req) => {
 
           tuitionStatus: [{ $group: { _id: "$tuition.status", count: { $sum: 1 } } }],
 
+          // Scoped to 부분납부 (partially paid) only — 완납/미납 students are
+          // already fully accounted for by the payment-status counts above,
+          // so mixing them in here would just inflate every term equally.
           terms: [
+            { $match: { "tuition.status": "부분납부" } },
             {
               $group: {
                 _id: null,

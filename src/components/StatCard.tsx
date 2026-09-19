@@ -25,6 +25,7 @@ export function StatCard({
   tone = "neutral",
   share,
   onClick,
+  compact = false,
 }: {
   label: string;
   value: number | string;
@@ -33,6 +34,8 @@ export function StatCard({
   /** 0–1; draws a thin share meter under the number. */
   share?: number;
   onClick?: () => void;
+  /** Smaller padding/type — used where the card sits alongside a list row. */
+  compact?: boolean;
 }) {
   const body = (
     <>
@@ -40,15 +43,21 @@ export function StatCard({
         {tone !== "neutral" && (
           <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${TONE_DOT[tone]}`} />
         )}
-        <span className="text-[13px] font-semibold text-ink2">{label}</span>
+        <span className={`font-semibold text-ink2 ${compact ? "text-xs" : "text-[13px]"}`}>{label}</span>
       </div>
 
-      <div className={`nums mt-2 text-[28px] font-extrabold leading-none ${TONE_TEXT[tone]}`}>
+      <div
+        className={`nums font-extrabold leading-none ${TONE_TEXT[tone]} ${
+          compact ? "mt-1 text-lg" : "mt-2 text-[28px]"
+        }`}
+      >
         {typeof value === "number" ? formatKRW(value) : value}
       </div>
 
       {share !== undefined && (
-        <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-[#edf1f5]">
+        <div
+          className={`overflow-hidden rounded-full bg-[#edf1f5] ${compact ? "mt-1.5 h-1" : "mt-2.5 h-1.5"}`}
+        >
           <div
             className={`h-full rounded-full ${TONE_DOT[tone]}`}
             style={{ width: `${Math.min(100, Math.max(0, share * 100))}%` }}
@@ -56,17 +65,19 @@ export function StatCard({
         </div>
       )}
 
-      {sub && <div className="nums mt-2 text-xs text-muted">{sub}</div>}
+      {sub && <div className={`nums text-muted ${compact ? "mt-1 text-[11px]" : "mt-2 text-xs"}`}>{sub}</div>}
     </>
   );
 
-  if (!onClick) return <div className="card p-4">{body}</div>;
+  const padding = compact ? "p-2.5" : "p-4";
+
+  if (!onClick) return <div className={`card ${padding}`}>{body}</div>;
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="card p-4 text-left transition hover:border-rule hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+      className={`card ${padding} text-left transition hover:border-rule hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/30`}
     >
       {body}
     </button>

@@ -43,5 +43,6 @@ export const COLLECTIONS = {
   students: "students",
   consultations: "consultations",
   settings: "settings",
+  info: "info",
   loginAttempts: "login_attempts",
 } as const;

@@ -1,11 +1,11 @@
 import type { Config } from "@netlify/functions";
 import { COLLECTIONS, coll } from "../lib/db.mts";
-import { requireAuth } from "../lib/auth.mts";
+import { requireRole } from "../lib/auth.mts";
 import { HttpError, handler, json, readJson } from "../lib/http.mts";
 import { parseOrThrow, settingsSchema } from "../lib/schema.mts";
 
 export default handler(async (req) => {
-  await requireAuth(req);
+  const role = await requireRole(req, ["admin", "manager"]);
   const settings = await coll(COLLECTIONS.settings);
 
   if (req.method === "GET") {
@@ -17,6 +17,7 @@ export default handler(async (req) => {
   }
 
   if (req.method === "PUT") {
+    if (role !== "admin") throw new HttpError(403, "권한이 없습니다.");
     const input = parseOrThrow(settingsSchema, await readJson(req));
     await settings.updateOne(
       { _id: "app" as any },

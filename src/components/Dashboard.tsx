@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 import { StatCard } from "./StatCard";
 import { CONSULT_CATEGORIES, formatKRW, type Stats } from "../../shared/domain";
+import { useLang } from "../i18n";
 
 /** The filter the students tab should open with when a card is clicked. */
 export type DrillFilter = Record<string, string>;
@@ -21,6 +22,8 @@ type StatusRowData = { key: string; label: string; value: number; tone: ListTone
 
 /** One row of a status breakdown list — a labeled bar, sized relative to `max` / `total`. */
 function StatusRow({ row, max, total }: { row: StatusRowData; max: number; total: number }) {
+  const { lang } = useLang();
+  const percentage = total ? Math.round((row.value / total) * 100) : 0;
   return (
     <li>
       <button
@@ -37,10 +40,9 @@ function StatusRow({ row, max, total }: { row: StatusRowData; max: number; total
           />
         </span>
         <span className="nums w-24 shrink-0 text-right text-sm">
-          <b>{row.value}</b>명
-          <span className="ml-1 text-xs text-muted">
-            · {total ? Math.round((row.value / total) * 100) : 0}%
-          </span>
+          <b>{row.value}</b>
+          {lang === "en" ? "" : "명"}
+          <span className="ml-1 text-xs text-muted">· {percentage}%</span>
         </span>
       </button>
     </li>
@@ -89,10 +91,11 @@ function Section({ title, note, children }: { title: string; note?: string; chil
 
 export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void }) {
   const { data, isLoading, error } = useQuery({ queryKey: ["stats"], queryFn: api.stats });
+  const { lang, t, tLevel } = useLang();
 
-  if (isLoading) return <p className="p-6 text-sm text-muted">불러오는 중…</p>;
+  if (isLoading) return <p className="p-6 text-sm text-muted">{t("불러오는 중…")}</p>;
   if (error || !data)
-    return <p className="p-6 text-sm text-critical">집계를 불러오지 못했습니다.</p>;
+    return <p className="p-6 text-sm text-critical">{t("집계를 불러오지 못했습니다.")}</p>;
 
   const s: Stats = data;
   const total = s.total || 0;
@@ -101,10 +104,16 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
   const countFor = (level: string, type: string) =>
     s.byLevelType.find((r) => r.level === level && r.studentType === type)?.count ?? 0;
 
-  const semesterLabel = `${s.settings.currentYear}-${s.settings.currentSemester}학기`;
+  const semesterLabel =
+    lang === "en"
+      ? `${s.settings.currentYear}-${s.settings.currentSemester} semester`
+      : `${s.settings.currentYear}-${s.settings.currentSemester}학기`;
   const absence = s.absence;
   const tuition = s.tuitionStatus;
   const unpaidAmount = Math.max(0, (s.tuitionSums.billed || 0) - (s.tuitionSums.paid || 0));
+  const won = (n: number) => (lang === "en" ? `${formatKRW(n)} won` : `${formatKRW(n)}원`);
+  const ofTotal = (share: number) =>
+    lang === "en" ? `${Math.round(share * 100)}% ${t("전체의")}` : `${t("전체의")} ${Math.round(share * 100)}%`;
 
   const consultRows = CONSULT_CATEGORIES.map((c) => {
     const hit = s.consultByCategory.find((r) => r.category === c);
@@ -115,29 +124,29 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
   return (
     <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6">
       {/* ------------------------------------------------------------ 전체 */}
-      <Section title="전체 학생" note="카드를 누르면 해당 조건으로 학생 목록이 열립니다">
+      <Section title={t("전체 학생")} note={t("카드를 누르면 해당 조건으로 학생 목록이 열립니다")}>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          <StatCard label="전체 학생" value={total} sub="명" onClick={() => onDrill({})} />
+          <StatCard label={t("전체 학생")} value={total} sub={t("명")} onClick={() => onDrill({})} />
           <StatCard
-            label="학부 · 재학생"
+            label={`${tLevel("학부")} · ${t("재학생")}`}
             value={countFor("학부", "재학생")}
             share={pct(countFor("학부", "재학생"))}
             onClick={() => onDrill({ level: "학부", studentType: "재학생" })}
           />
           <StatCard
-            label={`학부 · 신입생 (${semesterLabel})`}
+            label={`${tLevel("학부")} · ${t("신입생")} (${semesterLabel})`}
             value={countFor("학부", "신입생")}
             share={pct(countFor("학부", "신입생"))}
             onClick={() => onDrill({ level: "학부", studentType: "신입생" })}
           />
           <StatCard
-            label="대학원 · 재학생"
+            label={`${tLevel("대학원")} · ${t("재학생")}`}
             value={countFor("대학원", "재학생")}
             share={pct(countFor("대학원", "재학생"))}
             onClick={() => onDrill({ level: "대학원", studentType: "재학생" })}
           />
           <StatCard
-            label={`대학원 · 신입생 (${semesterLabel})`}
+            label={`${tLevel("대학원")} · ${t("신입생")} (${semesterLabel})`}
             value={countFor("대학원", "신입생")}
             share={pct(countFor("대학원", "신입생"))}
             onClick={() => onDrill({ level: "대학원", studentType: "신입생" })}
@@ -147,28 +156,28 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
 
       {/* ---------------------------------------------------------- 등록금 */}
       <Section
-        title="등록금"
-        note={`고지 ${formatKRW(s.tuitionSums.billed)}원 · 수납 ${formatKRW(s.tuitionSums.paid)}원 · 미수 ${formatKRW(unpaidAmount)}원`}
+        title={t("등록금")}
+        note={`${t("고지")} ${won(s.tuitionSums.billed)} · ${t("수납")} ${won(s.tuitionSums.paid)} · ${t("미수")} ${won(unpaidAmount)}`}
       >
         {(() => {
           const statusRows: StatusRowData[] = [
             {
               key: "완납",
-              label: "완납",
+              label: t("완납"),
               value: tuition["완납"] ?? 0,
               tone: "good",
               onClick: () => onDrill({ tuitionStatus: "완납" }),
             },
             {
               key: "부분납부",
-              label: "부분납부",
+              label: t("부분납부"),
               value: tuition["부분납부"] ?? 0,
               tone: "warning",
               onClick: () => onDrill({ tuitionStatus: "부분납부" }),
             },
             {
               key: "미납",
-              label: "미납",
+              label: t("미납"),
               value: tuition["미납"] ?? 0,
               tone: "critical",
               onClick: () => onDrill({ tuitionStatus: "미납" }),
@@ -177,25 +186,37 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
           const max = Math.max(1, ...statusRows.map((r) => r.value));
           const total = statusRows.reduce((sum, r) => sum + r.value, 0);
 
+          // Term counts are scoped to 부분납부 students only (see stats.mts),
+          // so their share/percentage should be relative to that group, not
+          // every student.
+          const partialCount = tuition["부분납부"] ?? 0;
+          const pctOfPartial = (n: number) => (partialCount ? n / partialCount : 0);
+
           return (
             <div className="card p-4">
-              <h3 className="text-sm font-bold">납부 현황</h3>
+              <h3 className="text-sm font-bold">{t("납부 현황")}</h3>
               <ul className="mt-3 space-y-2.5">
                 <StatusRow row={statusRows[0]} max={max} total={total} />
                 <StatusRow row={statusRows[1]} max={max} total={total} />
               </ul>
 
-              <div className="my-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {/* pl-40 (160px) lines the cards up with where the row bars above start:
+                  dot (8px) + gap-3 (12px) + label w-32 (128px) + gap-3 (12px). */}
+              <p className="pl-0 text-[11px] text-muted sm:pl-40">
+                {lang === "en" ? "Among partially-paid students" : "부분납부 학생 기준"}
+              </p>
+              <div className="mt-1.5 mb-3 grid grid-cols-2 gap-2 pl-0 sm:pl-40 lg:grid-cols-4">
                 {([1, 2, 3, 4] as const).map((n) => {
                   const value = s.terms[`term${n}` as keyof typeof s.terms] ?? 0;
                   return (
                     <StatCard
                       key={n}
-                      label={`${n}차 납부`}
+                      compact
+                      label={lang === "en" ? `Term ${n} payment` : `${n}차 납부`}
                       value={value}
-                      share={pct(value)}
-                      sub={`전체의 ${Math.round(pct(value) * 100)}%`}
-                      onClick={() => onDrill({ term: String(n) })}
+                      share={pctOfPartial(value)}
+                      sub={ofTotal(pctOfPartial(value))}
+                      onClick={() => onDrill({ term: String(n), tuitionStatus: "부분납부" })}
                     />
                   );
                 })}
@@ -210,35 +231,35 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
       </Section>
 
       {/* ------------------------------------------------------------ 출결 */}
-      <Section title="출결">
+      <Section title={t("출결")}>
         <StatusListCard
-          title="출결 현황"
-          note={absence.a4 > 0 ? "결석 4회 이상은 즉시 상담 필요" : undefined}
+          title={t("출결 현황")}
+          note={absence.a4 > 0 ? t("결석 4회 이상은 즉시 상담 필요") : undefined}
           rows={[
             {
               key: "good",
-              label: "양호 (0회)",
+              label: t("양호 (0회)"),
               value: absence.good,
               tone: "good",
               onClick: () => onDrill({ absence: "good" }),
             },
             {
               key: "a1",
-              label: "결석 1회",
+              label: t("결석 1회"),
               value: absence.a1,
               tone: "warning",
               onClick: () => onDrill({ absence: "a1" }),
             },
             {
               key: "a23",
-              label: "결석 2–3회",
+              label: t("결석 2–3회"),
               value: absence.a23,
               tone: "serious",
               onClick: () => onDrill({ absence: "a23" }),
             },
             {
               key: "a4",
-              label: "결석 4회 이상",
+              label: t("결석 4회 이상"),
               value: absence.a4,
               tone: "critical",
               onClick: () => onDrill({ absence: "a4" }),
@@ -248,14 +269,17 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
       </Section>
 
       {/* ------------------------------------------------------------ 상담 */}
-      <Section title="상담" note="분야별 기록 건수 (한 기록이 여러 분야에 해당할 수 있음)">
+      <Section
+        title={lang === "en" ? "Consultations" : "상담"}
+        note={t("분야별 기록 건수 (한 기록이 여러 분야에 해당할 수 있음)")}
+      >
         <div className="grid gap-3 lg:grid-cols-3">
           <div className="card p-4 lg:col-span-2">
             <ul className="space-y-2.5">
               {consultRows.map((row) => (
                 <li key={row.category} className="flex items-center gap-3">
                   <span className="w-40 shrink-0 text-sm font-semibold text-ink2">
-                    {row.category}
+                    {t(row.category)}
                   </span>
                   <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#edf1f5]">
                     <span
@@ -264,8 +288,12 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
                     />
                   </span>
                   <span className="nums w-28 shrink-0 text-right text-sm">
-                    <b>{row.records}</b>건
-                    <span className="ml-1 text-xs text-muted">· {row.students}명</span>
+                    <b>{row.records}</b>
+                    {lang === "en" ? "" : "건"}
+                    <span className="ml-1 text-xs text-muted">
+                      · {row.students}
+                      {lang === "en" ? "" : "명"}
+                    </span>
                   </span>
                 </li>
               ))}
@@ -273,9 +301,9 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
           </div>
 
           <div className="card p-4">
-            <h3 className="text-sm font-bold">최근 상담</h3>
+            <h3 className="text-sm font-bold">{lang === "en" ? "Recent Consultations" : "최근 상담"}</h3>
             {s.recentConsults.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">기록이 없습니다.</p>
+              <p className="mt-3 text-sm text-muted">{t("기록이 없습니다.")}</p>
             ) : (
               <ul className="mt-3 space-y-3">
                 {s.recentConsults.map((r) => (
@@ -290,7 +318,7 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
                     <div className="mt-1 flex flex-wrap gap-1">
                       {r.categories.map((c) => (
                         <span key={c} className="chip bg-[#eef3fa] text-brand">
-                          {c}
+                          {t(c)}
                         </span>
                       ))}
                     </div>

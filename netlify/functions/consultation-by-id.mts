@@ -1,12 +1,12 @@
 import type { Config, Context } from "@netlify/functions";
 import { ObjectId } from "mongodb";
 import { COLLECTIONS, coll } from "../lib/db.mts";
-import { requireAuth } from "../lib/auth.mts";
+import { requireRole } from "../lib/auth.mts";
 import { HttpError, handler, json, readJson } from "../lib/http.mts";
 import { consultationPatchSchema, parseOrThrow } from "../lib/schema.mts";
 
 export default handler(async (req, ctx: Context) => {
-  await requireAuth(req);
+  await requireRole(req, ["admin"]);
   const id = (ctx.params as Record<string, string>).id;
   if (!ObjectId.isValid(id)) throw new HttpError(400, "잘못된 ID 입니다.");
   const _id = new ObjectId(id);

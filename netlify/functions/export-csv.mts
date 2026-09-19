@@ -1,6 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { COLLECTIONS, KO_COLLATION, coll } from "../lib/db.mts";
-import { requireAuth } from "../lib/auth.mts";
+import { requireRole } from "../lib/auth.mts";
 import { handler, noStoreText } from "../lib/http.mts";
 import { buildStudentQuery } from "../lib/query.mts";
 
@@ -49,7 +49,7 @@ function csvCell(value: unknown): string {
 }
 
 export default handler(async (req) => {
-  await requireAuth(req);
+  await requireRole(req, ["admin"]);
   const url = new URL(req.url);
   const { filter, sort } = buildStudentQuery(url);
 

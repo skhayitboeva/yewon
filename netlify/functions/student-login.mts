@@ -1,0 +1,70 @@
+import type { Config } from "@netlify/functions";
+import { COLLECTIONS, coll } from "../lib/db.mts";
+import {
+  clearLoginFailures,
+  clientIp,
+  enforceLoginRateLimit,
+  hashPassword,
+  issueCookie,
+  recordLoginFailure,
+  verifyPassword,
+} from "../lib/auth.mts";
+import { HttpError, handler, json, readJson } from "../lib/http.mts";
+import { parseOrThrow, studentLoginSchema } from "../lib/schema.mts";
+
+const MIN_PASSWORD_LENGTH = 5;
+
+export default handler(async (req) => {
+  if (req.method !== "POST") throw new HttpError(405, "POST만 허용됩니다.");
+
+  const ip = clientIp(req);
+  await enforceLoginRateLimit(ip);
+
+  const { mobile, password } = parseOrThrow(studentLoginSchema, await readJson(req));
+  const students = await coll(COLLECTIONS.students);
+  // Stored numbers aren't consistently digits-only (imported data keeps "010-1234-5678"
+  // dashes; numbers entered/edited through the app are digits-only) — compare with
+  // dashes stripped on both sides instead of relying on exact string equality.
+  const student = await students.findOne({
+    enrollStatus: { $ne: "삭제" },
+    $expr: {
+      $eq: [
+        { $replaceAll: { input: { $ifNull: ["$mobile", ""] }, find: "-", replacement: "" } },
+        mobile,
+      ],
+    },
+  });
+
+  if (!student) {
+    await recordLoginFailure(ip);
+    throw new HttpError(401, "등록된 학생 정보를 찾을 수 없습니다.");
+  }
+
+  if (!password) {
+    return json({ needsPassword: !student.passwordHash });
+  }
+
+  if (!student.passwordHash) {
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      throw new HttpError(400, "비밀번호는 5자 이상이어야 합니다.");
+    }
+    const passwordHash = await hashPassword(password);
+    await students.updateOne(
+      { _id: student._id },
+      { $set: { passwordHash, updatedAt: new Date() } }
+    );
+    await clearLoginFailures(ip);
+    return json({ ok: true }, { headers: { "set-cookie": await issueCookie("user") } });
+  }
+
+  const ok = await verifyPassword(password, student.passwordHash);
+  if (!ok) {
+    await recordLoginFailure(ip);
+    throw new HttpError(401, "비밀번호가 올바르지 않습니다.");
+  }
+
+  await clearLoginFailures(ip);
+  return json({ ok: true }, { headers: { "set-cookie": await issueCookie("user") } });
+});
+
+export const config: Config = { path: "/api/student-login" };

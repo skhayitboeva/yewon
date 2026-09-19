@@ -1,11 +1,11 @@
 import type { Config } from "@netlify/functions";
 import { COLLECTIONS, coll } from "../lib/db.mts";
-import { requireAuth } from "../lib/auth.mts";
+import { requireRole } from "../lib/auth.mts";
 import { handler, json } from "../lib/http.mts";
 
 /** Feeds the filter dropdowns with the values that actually exist in the data. */
 export default handler(async (req) => {
-  await requireAuth(req);
+  await requireRole(req, ["admin", "manager"]);
   const students = await coll(COLLECTIONS.students);
 
   const [majors, cohorts] = await Promise.all([

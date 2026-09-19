@@ -287,14 +287,15 @@
 
 | 메서드 | 경로 | 설명 |
 |---|---|---|
-| POST | `/api/login` | `{password}` → httpOnly 세션 쿠키 발급 |
+| POST | `/api/login` | `{username, password}` (admin/manager) → httpOnly 세션 쿠키 발급 (역할 포함) |
+| POST | `/api/student-login` | `{mobile, password?}` 학생 로그인 — `password` 생략 시 계정 존재/최초 여부만 확인 |
+| POST | `/api/students/:id/reset-password` | 학생 비밀번호 초기화 (admin 전용) |
 | POST | `/api/logout` | 쿠키 삭제 |
 | GET | `/api/me` | 세션 유효성 확인 |
 | GET | `/api/stats` | 대시보드 집계 (단일 aggregation) |
 | GET | `/api/students` | `q, level, major, tuitionStatus, term, absenceBucket, cohort, sort, dir, page, limit` |
 | POST | `/api/students` | 학생 추가 |
 | PATCH | `/api/students/:id` | 부분 수정 |
-| PATCH | `/api/students-bulk` | 선택/필터 대상 일괄 수정 (신입·재학, 학적, 등록금 상태) |
 | GET | `/api/facets` | 필터 드롭다운 값 (전공 · 입학 코호트) |
 | DELETE | `/api/students/:id` | 삭제 |
 | GET | `/api/consultations?studentId=` | 학생별 상담 이력 |
@@ -308,12 +309,20 @@
 
 ---
 
-## 7. 인증
+## 7. 인증 · 권한
 
-- 공용 비밀번호 1개. 평문이 아니라 **scrypt 해시**를 환경변수에 넣는다 (`APP_PASSWORD_HASH`).
-- 로그인 성공 → HS256 JWT를 `HttpOnly; Secure; SameSite=Lax; Max-Age=12h` 쿠키로 발급.
-- 모든 API가 쿠키를 검증. 실패 시 401 → 프론트는 로그인 화면으로.
-- 로그인 시도 제한: 동일 IP 10회 실패 시 15분 차단 (MongoDB에 기록).
+- 고정 계정 2개 (`admin` / `manager`), 아이디별 비밀번호를 **scrypt 해시**로 환경변수에 넣는다
+  (`APP_PASSWORD_HASH_ADMIN` / `APP_PASSWORD_HASH_MANAGER`).
+- `user` 역할은 고정 계정이 아니라 **학생 개인별 로그인**이다. `students.mobile` 로 본인 확인 후,
+  최초 로그인 시 직접 비밀번호(5자 이상)를 설정하고(`students.passwordHash`, scrypt 해시), 이후엔
+  그 번호+비밀번호로 로그인한다. `enrollStatus`가 `삭제`인 학생은 로그인할 수 없다. 관리자는 학생
+  표의 "비밀번호 초기화" 버튼으로 `passwordHash`를 지워 재설정을 유도할 수 있다.
+- `passwordHash`는 학생 조회 API(`/api/students`, `/api/students/:id`) 응답에서 항상 제외하고,
+  대신 파생 플래그 `hasPassword: boolean`만 내려준다.
+- 로그인 성공 → 역할을 담은 HS256 JWT를 `HttpOnly; Secure; SameSite=Lax; Max-Age=12h` 쿠키로 발급.
+- 모든 API가 쿠키를 검증(`requireAuth`/`requireRole`). 실패 시 401(미인증) 또는 403(권한 부족) → 프론트는 로그인 화면 또는 UI 숨김으로 대응.
+- 권한: `admin`은 전체 읽기/쓰기, `manager`는 대시보드·학생·상담 전체 읽기(쓰기·CSV 내보내기 불가), `user`는 대시보드·안내 조회만 가능.
+- 로그인 시도 제한: 동일 IP 10회 실패 시 15분 차단 (직원 로그인과 학생 로그인이 같은 카운터를 공유, MongoDB에 기록).
 - 개인정보(생년월일·주소·연락처)가 있으므로 `noindex` 메타 + `robots.txt` 차단.
 
 ---
@@ -367,7 +376,8 @@ yewon-sms/
 |---|---|
 | `MONGODB_URI` | Atlas 연결 문자열 |
 | `MONGODB_DB` | `yewon_sms` |
-| `APP_PASSWORD_HASH` | 공용 비밀번호 scrypt 해시 (생성 스크립트 제공) |
+| `APP_PASSWORD_HASH_ADMIN` | admin 비밀번호 scrypt 해시 (생성 스크립트 제공) |
+| `APP_PASSWORD_HASH_MANAGER` | manager 비밀번호 scrypt 해시 |
 | `JWT_SECRET` | 32바이트 랜덤 문자열 |
 
 **배포 순서**

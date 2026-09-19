@@ -4,33 +4,48 @@ import { api } from "./api";
 import { Login } from "./components/Login";
 import { Dashboard, type DrillFilter } from "./components/Dashboard";
 import { StudentsTable } from "./components/StudentsTable";
+import { Info } from "./components/Info";
 import { Toasts } from "./components/Toast";
 import { useToasts } from "./hooks";
+import { useLang } from "./i18n";
+import type { Role } from "../shared/domain";
 
-type Tab = "dashboard" | "students";
+type Tab = "dashboard" | "students" | "info";
 
 export default function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
   const [tab, setTab] = useState<Tab>("dashboard");
   const [drill, setDrill] = useState<DrillFilter | undefined>(undefined);
   const [tableKey, setTableKey] = useState(0);
   const { toasts, push, dismiss } = useToasts();
   const qc = useQueryClient();
+  const { lang, t, toggle } = useLang();
+
+  async function refreshAuth() {
+    try {
+      const r = await api.me();
+      setAuthed(r.authed);
+      setRole(r.role);
+    } catch {
+      setAuthed(false);
+      setRole(null);
+    }
+  }
 
   useEffect(() => {
-    api
-      .me()
-      .then((r) => setAuthed(r.authed))
-      .catch(() => setAuthed(false));
+    refreshAuth();
   }, []);
 
   if (authed === null) {
-    return <p className="p-10 text-center text-sm text-muted">확인 중…</p>;
+    return <p className="p-10 text-center text-sm text-muted">{t("확인 중…")}</p>;
   }
 
   if (!authed) {
-    return <Login onSuccess={() => setAuthed(true)} />;
+    return <Login onSuccess={refreshAuth} />;
   }
+
+  const effectiveTab: Tab = role === "user" && tab === "students" ? "dashboard" : tab;
 
   function openStudents(filter: DrillFilter) {
     const params = new URLSearchParams(filter as Record<string, string>);
@@ -48,11 +63,12 @@ export default function App() {
     await api.logout().catch(() => {});
     qc.clear();
     setAuthed(false);
+    setRole(null);
   }
 
   const tabClass = (t: Tab) =>
     `rounded-lg px-3.5 py-2 text-sm font-bold transition ${
-      tab === t ? "bg-brand text-white" : "text-ink2 hover:bg-plane"
+      effectiveTab === t ? "bg-brand text-white" : "text-ink2 hover:bg-plane"
     }`;
 
   return (
@@ -60,36 +76,52 @@ export default function App() {
       <header className="bg-[#243b53] px-5 py-4 text-white sm:px-7">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
           <div>
-            <h1 className="text-lg font-bold">예원예술대학교 유학생 관리 시스템</h1>
+            <h1 className="text-lg font-bold">{t("예원예술대학교 유학생 관리 시스템")} (Uzbekistan)</h1>
             <p className="mt-0.5 text-xs text-white/70">
-              학부 · 대학원 | 학적 · 등록금 · 출결 · 상담 통합 관리
+              {t("학부 · 대학원 | 학적 · 등록금 · 출결 · 상담 통합 관리")}
             </p>
           </div>
-          <button
-            onClick={logout}
-            className="rounded-lg border border-white/30 px-3 py-1.5 text-sm font-semibold hover:bg-white/10"
-          >
-            로그아웃
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={toggle}
+              title={lang === "ko" ? "Switch to English" : "한국어로 전환"}
+              className="rounded-lg border border-white/30 px-3 py-1.5 text-sm font-semibold hover:bg-white/10"
+            >
+              {lang === "ko" ? "EN" : "한국어"}
+            </button>
+            <button
+              onClick={logout}
+              className="rounded-lg border border-white/30 px-3 py-1.5 text-sm font-semibold hover:bg-white/10"
+            >
+              {t("로그아웃")}
+            </button>
+          </div>
         </div>
       </header>
 
       <nav className="sticky top-0 z-20 border-b border-line bg-surface px-4 py-2 sm:px-6">
         <div className="mx-auto flex max-w-[1500px] gap-1.5">
           <button className={tabClass("dashboard")} onClick={() => setTab("dashboard")}>
-            대시보드
+            {t("대시보드")}
           </button>
-          <button className={tabClass("students")} onClick={() => setTab("students")}>
-            전체 학생
+          {role !== "user" && (
+            <button className={tabClass("students")} onClick={() => setTab("students")}>
+              {t("전체 학생")}
+            </button>
+          )}
+          <button className={tabClass("info")} onClick={() => setTab("info")}>
+            {t("안내")}
           </button>
         </div>
       </nav>
 
       <main>
-        {tab === "dashboard" ? (
+        {effectiveTab === "dashboard" ? (
           <Dashboard onDrill={openStudents} />
+        ) : effectiveTab === "students" ? (
+          <StudentsTable key={tableKey} onToast={push} initialFilter={drill} role={role!} />
         ) : (
-          <StudentsTable key={tableKey} onToast={push} initialFilter={drill} />
+          <Info role={role} onToast={push} />
         )}
       </main>
 

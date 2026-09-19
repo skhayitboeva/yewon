@@ -48,5 +48,19 @@ await db
   .collection("settings")
   .updateOne({ _id: "app" }, { $set: { currentYear: 2026, currentSemester: 1 } }, { upsert: true });
 
+await db.collection("info").updateOne(
+  { _id: "app" },
+  {
+    $set: {
+      tuitionDeadline: "2026-03-02 18:00까지",
+      classTimeUndergraduate: "월~금 09:00–13:00",
+      classTimeGraduate: "화·목 18:00–21:00",
+      visaApplicationTime: "평일 09:00–17:00 (사전 예약)",
+      orientation: "2026-02-27(금) 10:00, 본관 대강당",
+    },
+  },
+  { upsert: true }
+);
+
 console.log("완료");
 await client.close();

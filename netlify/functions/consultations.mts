@@ -1,11 +1,11 @@
 import type { Config } from "@netlify/functions";
 import { COLLECTIONS, coll } from "../lib/db.mts";
-import { requireAuth } from "../lib/auth.mts";
+import { requireRole } from "../lib/auth.mts";
 import { HttpError, handler, json, readJson } from "../lib/http.mts";
 import { consultationCreateSchema, parseOrThrow } from "../lib/schema.mts";
 
 export default handler(async (req) => {
-  await requireAuth(req);
+  const role = await requireRole(req, ["admin", "manager"]);
   const consultations = await coll(COLLECTIONS.consultations);
 
   if (req.method === "GET") {
@@ -27,6 +27,7 @@ export default handler(async (req) => {
   }
 
   if (req.method === "POST") {
+    if (role !== "admin") throw new HttpError(403, "권한이 없습니다.");
     const input = parseOrThrow(consultationCreateSchema, await readJson(req));
     const students = await coll(COLLECTIONS.students);
     const student = await students.findOne({ studentId: input.studentId });

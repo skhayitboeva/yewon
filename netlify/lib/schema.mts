@@ -16,7 +16,14 @@ const dateStr = z
   .string()
   .trim()
   .regex(/^(\d{4}-\d{2}-\d{2})?$/, "날짜는 YYYY-MM-DD 형식이어야 합니다.");
-const money = z.number().int().min(0).max(1_000_000_000);
+/** Capped at 7 digits to match the input UI (TuitionCell) and to keep amounts
+ * well inside Number's safe integer range. */
+const money = z.number().int().min(0).max(9_999_999);
+/** Digits only, up to 11 — matches the input UI's phone-number cap. */
+const phoneStr = z
+  .string()
+  .trim()
+  .regex(/^\d{0,11}$/, "전화번호는 숫자 11자리 이하로 입력하세요.");
 
 export const tuitionSchema = z.object({
   status: z.enum(TUITION_STATUSES),
@@ -52,8 +59,8 @@ export const studentCreateSchema = z.object({
   admissionType: z.enum(ADMISSION_TYPES).or(z.literal("")).default("신입학"),
   nationality: str(60).default("우즈베키스탄"),
   address: str(400).default(""),
-  phone: str(40).default(""),
-  mobile: str(40).default(""),
+  phone: phoneStr.default(""),
+  mobile: phoneStr.default(""),
   email: str(160).default(""),
   lastRegYear: str(10).default(""),
   lastRegSemester: str(10).default(""),
@@ -72,20 +79,6 @@ export const studentPatchSchema = studentCreateSchema
   })
   .strict();
 
-export const bulkPatchSchema = z.object({
-  ids: z.array(z.string().min(1)).max(5000).optional(),
-  /** When `all` is true the current filter query decides the target set. */
-  all: z.boolean().optional(),
-  filter: z.record(z.string()).optional(),
-  set: z
-    .object({
-      studentType: z.enum(STUDENT_TYPES).optional(),
-      enrollStatus: z.enum(ENROLL_STATUSES).optional(),
-      "tuition.status": z.enum(TUITION_STATUSES).optional(),
-    })
-    .refine((v) => Object.keys(v).length > 0, "변경할 항목이 없습니다."),
-});
-
 export const consultationCreateSchema = z.object({
   studentId: str(40).min(1),
   date: dateStr.refine((v) => v.length === 10, "일자는 필수입니다."),
@@ -103,7 +96,30 @@ export const settingsSchema = z.object({
   currentSemester: z.union([z.literal(1), z.literal(2)]),
 });
 
-export const loginSchema = z.object({ password: z.string().min(1).max(200) });
+export const infoItemSchema = z.object({
+  id: str(60).min(1),
+  label: str(120),
+  value: str(1000),
+});
+
+export const infoSchema = z.object({
+  tuitionDeadline: str(300).default(""),
+  classTimeUndergraduate: str(300).default(""),
+  classTimeGraduate: str(300).default(""),
+  visaApplicationTime: str(300).default(""),
+  orientation: str(300).default(""),
+  items: z.array(infoItemSchema).max(50).default([]),
+});
+
+export const loginSchema = z.object({
+  username: z.string().trim().min(1).max(100),
+  password: z.string().min(1).max(200),
+});
+
+export const studentLoginSchema = z.object({
+  mobile: z.string().trim().regex(/^\d{1,11}$/, "휴대전화 번호를 정확히 입력하세요."),
+  password: z.string().min(1).max(200).optional(),
+});
 
 /** Turns `{tuition: {term1: 1}}` into `{"tuition.term1": 1}` so $set is surgical. */
 export function flattenSet(obj: Record<string, unknown>, prefix = ""): Record<string, unknown> {

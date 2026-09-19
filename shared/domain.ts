@@ -1,5 +1,7 @@
 /** Shared between the React app and the Netlify Functions. */
 
+export type Role = "admin" | "manager" | "user";
+
 export const LEVELS = ["학부", "대학원"] as const;
 export type Level = (typeof LEVELS)[number];
 
@@ -8,7 +10,9 @@ export const STUDENT_TYPES = ["신입생", "재학생"] as const;
 export type StudentType = (typeof STUDENT_TYPES)[number];
 
 export const GENDERS = ["남", "여"] as const;
-export const ENROLL_STATUSES = ["재학", "휴학", "복학", "제적", "졸업", "자퇴"] as const;
+/** "삭제" is a soft-delete marker set by the table's delete button — the
+ * student record is never actually removed from the database. */
+export const ENROLL_STATUSES = ["재학", "휴학", "복학", "제적", "졸업", "자퇴", "삭제"] as const;
 export const ADMISSION_TYPES = ["신입학", "편입학", "재입학"] as const;
 export const COURSES = ["", "석사과정", "박사과정"] as const;
 
@@ -82,6 +86,8 @@ export interface Student {
   contactCount: number;
   memo: string;
   consultCount?: number;
+  /** Whether this student has self-set a portal login password. Never the hash itself. */
+  hasPassword?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -103,6 +109,31 @@ export interface Settings {
   currentYear: number;
   currentSemester: 1 | 2;
 }
+
+export interface InfoItem {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface Info {
+  tuitionDeadline: string;
+  classTimeUndergraduate: string;
+  classTimeGraduate: string;
+  visaApplicationTime: string;
+  orientation: string;
+  /** Extra admin-defined boxes, added on top of the fixed fields above. */
+  items: InfoItem[];
+}
+
+export const EMPTY_INFO: Info = {
+  tuitionDeadline: "",
+  classTimeUndergraduate: "",
+  classTimeGraduate: "",
+  visaApplicationTime: "",
+  orientation: "",
+  items: [],
+};
 
 export interface Stats {
   total: number;

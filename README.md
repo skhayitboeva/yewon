@@ -39,14 +39,22 @@ cp .env.example .env
 `.env` 를 열어 채웁니다.
 
 ```bash
-# 공용 로그인 비밀번호 해시 생성
-npm run hash-password -- "실제로쓸비밀번호"
-# → 출력된 scrypt$... 줄을 APP_PASSWORD_HASH 에 붙여넣기
+# 직원 로그인 비밀번호 해시 생성 (아이디는 admin / manager 로 고정)
+npm run hash-password -- "admin 비밀번호"
+# → 출력된 scrypt$... 줄을 APP_PASSWORD_HASH_ADMIN 에 붙여넣기
+npm run hash-password -- "manager 비밀번호"
+# → APP_PASSWORD_HASH_MANAGER 에 붙여넣기
 
 # 세션 서명 키 생성
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 # → JWT_SECRET 에 붙여넣기
 ```
+
+로그인 아이디에 따라 권한이 갈립니다: `admin`(전체 읽기/쓰기), `manager`(전체 읽기 전용,
+CSV 내보내기 제외). 학생은 별도 계정이 없고, 로그인 화면에서 "학생이신가요?" 를 눌러
+본인 휴대전화 번호로 로그인합니다 — 처음 로그인할 때 비밀번호(5자 이상)를 직접 설정하고,
+다음부터는 그 번호+비밀번호로 로그인합니다(`user` 권한, 대시보드·안내만 조회). 학생이
+비밀번호를 잊으면 학생 표에서 관리자가 "비밀번호 초기화" 버튼으로 초기화해줄 수 있습니다.
 
 ## 5. 초기 데이터 넣기 (개발용 551명)
 
@@ -82,7 +90,8 @@ netlify deploy --prod
 |---|---|
 | `MONGODB_URI` | Atlas 연결 문자열 |
 | `MONGODB_DB` | `yewon_sms` |
-| `APP_PASSWORD_HASH` | 4단계에서 생성한 `scrypt$...` |
+| `APP_PASSWORD_HASH_ADMIN` | 4단계에서 생성한 admin `scrypt$...` |
+| `APP_PASSWORD_HASH_MANAGER` | 4단계에서 생성한 manager `scrypt$...` |
 | `JWT_SECRET` | 4단계에서 생성한 랜덤 문자열 |
 
 등록 후 한 번 더 `netlify deploy --prod`.
@@ -127,14 +136,15 @@ data/students.seed.json  참고 HTML에서 추출한 551명 (개발용)
 
 | 메서드 | 경로 | 설명 |
 |---|---|---|
-| POST | `/api/login` | 공용 비밀번호 로그인 |
+| POST | `/api/login` | 아이디(admin/manager) + 비밀번호 로그인 |
+| POST | `/api/student-login` | 휴대전화 번호(+ 최초 로그인 시 비밀번호 설정) 학생 로그인 |
+| POST | `/api/students/:id/reset-password` | 학생 비밀번호 초기화 (admin 전용) |
 | POST | `/api/logout` | 로그아웃 |
 | GET | `/api/me` | 세션 확인 |
 | GET | `/api/stats` | 대시보드 집계 |
 | GET | `/api/facets` | 필터 드롭다운 값 (전공 · 코호트) |
 | GET · POST | `/api/students` | 목록 조회 · 학생 추가 |
 | GET · PATCH · DELETE | `/api/students/:id` | 단건 조회 · 수정 · 삭제 |
-| PATCH | `/api/students-bulk` | 일괄 변경 (신입/재학, 학적, 등록금 상태) |
 | GET · POST | `/api/consultations` | 상담 이력 · 추가 |
 | PATCH · DELETE | `/api/consultations/:id` | 상담 수정 · 삭제 |
 | GET · PUT | `/api/settings` | 현재 학기 |
@@ -143,7 +153,8 @@ data/students.seed.json  참고 HTML에서 추출한 551명 (개발용)
 ## 보안 메모
 
 - 학생 개인정보(생년월일·주소·연락처)가 들어 있습니다. URL과 비밀번호를 공유하지 마세요.
-- 로그인은 공용 비밀번호 1개 → 12시간짜리 HttpOnly 세션 쿠키.
-- 같은 IP에서 10회 실패하면 15분 차단됩니다.
+- 로그인 성공 시 역할(admin/manager/user)이 담긴 12시간짜리 HttpOnly 세션 쿠키를 발급합니다.
+- 학생의 비밀번호는 scrypt 해시로만 저장하며, 관리자/매니저 화면에는 절대 내려주지 않습니다.
+- 같은 IP에서 10회 실패하면(직원·학생 로그인 합산) 15분 차단됩니다.
 - `robots` 차단 헤더가 걸려 있어 검색엔진에 노출되지 않습니다.
 - `.env` 는 절대 커밋하지 마세요 (`.gitignore` 에 포함되어 있습니다).
