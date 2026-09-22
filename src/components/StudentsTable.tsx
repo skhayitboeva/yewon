@@ -266,7 +266,7 @@ export function StudentsTable({
       </div>
 
       {/* ---------------------------------------------------------- table */}
-      <div className="card mt-3 overflow-x-auto">
+      <div className="card mt-3 min-h-[280px] overflow-x-auto">
         {error ? (
           <p className="p-8 text-center text-sm text-critical">{t("students:table.loadError")}</p>
         ) : (

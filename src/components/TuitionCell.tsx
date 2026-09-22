@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
   TUITION_STATUSES,
@@ -50,15 +51,28 @@ export function TuitionCell({
   /** Once staff manually pick a status, stop auto-suggesting it for the rest of this edit. */
   const [statusOverridden, setStatusOverridden] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  /** Fixed-position coordinates for the portaled popup, computed from the trigger button. */
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   const paid = tuitionPaid(tuition);
   const draftPaid = tuitionPaid(draft);
   const overTotal = draft.total > 0 && draftPaid > draft.total;
   const underTotal = draft.total > 0 && draftPaid < draft.total;
 
+  const POPUP_WIDTH = 256; // w-64
+
   function start() {
     setDraft(tuition);
     setStatusOverridden(false);
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) {
+      const left = Math.min(
+        Math.max(8, rect.right - POPUP_WIDTH),
+        window.innerWidth - POPUP_WIDTH - 8,
+      );
+      setPos({ top: rect.bottom + 4, left });
+    }
     setOpen(true);
   }
 
@@ -71,6 +85,17 @@ export function TuitionCell({
     }
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
+  }, [open]);
+
+  /** Closes on scroll (table or page) instead of tracking position, since the
+   * popup is portaled to <body> with fixed coordinates snapshotted at open time. */
+  useEffect(() => {
+    if (!open) return;
+    function onScroll() {
+      setOpen(false);
+    }
+    window.addEventListener("scroll", onScroll, true);
+    return () => window.removeEventListener("scroll", onScroll, true);
   }, [open]);
 
   /** Updates an amount field and, unless status was manually overridden, re-suggests the status. */
@@ -114,6 +139,7 @@ export function TuitionCell({
   if (!open) {
     return (
       <button
+        ref={triggerRef}
         type="button"
         onClick={start}
         title={t("common:states.clickToEdit")}
@@ -124,10 +150,11 @@ export function TuitionCell({
     );
   }
 
-  return (
+  return createPortal(
     <div
       ref={popupRef}
-      className="absolute right-2 z-20 mt-1 w-64 rounded-xl border border-line bg-surface p-3 shadow-xl"
+      style={{ top: pos?.top ?? 0, left: pos?.left ?? 0 }}
+      className="fixed z-50 w-64 rounded-xl border border-line bg-surface p-3 shadow-xl"
     >
       <label className="label flex items-center justify-between">
         <span>{t("modals:tuition.statusLabel")}</span>
@@ -204,6 +231,7 @@ export function TuitionCell({
           {t("common:actions.save")}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
