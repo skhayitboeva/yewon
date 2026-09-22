@@ -13,6 +13,31 @@ export default handler(async (req) => {
 
   if (req.method === "GET") {
     const url = new URL(req.url);
+
+    // Client-side search/filter/sort: hand back the full roster in one request
+    // instead of a filtered page, so the table can filter in memory.
+    if (url.searchParams.get("all") === "1") {
+      const consultations = await coll(COLLECTIONS.consultations);
+      const [rows, counts] = await Promise.all([
+        students.find({}).collation(KO_COLLATION).sort({ studentId: 1 }).toArray(),
+        consultations
+          .aggregate([{ $group: { _id: "$studentId", n: { $sum: 1 } } }])
+          .toArray(),
+      ]);
+      const countBy = new Map(counts.map((c) => [c._id as string, c.n as number]));
+
+      return json({
+        rows: rows.map((r) => ({
+          ...withoutPasswordHash(r as Record<string, unknown>),
+          consultCount: countBy.get(r.studentId as string) || 0,
+        })),
+        total: rows.length,
+        page: 1,
+        limit: rows.length,
+        pages: 1,
+      });
+    }
+
     const { filter, sort, page, limit } = buildStudentQuery(url);
 
     const [rows, total] = await Promise.all([

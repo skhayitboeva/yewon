@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
-import { useDebounced } from "../hooks";
 import { useDomainLabel } from "../i18n/domainLabels";
 import {
   ABSENCE_BUCKETS,
@@ -51,7 +50,7 @@ function Select({
     <label className="flex items-center gap-1.5 text-xs font-semibold text-ink2">
       <span className="sr-only sm:not-sr-only">{label}</span>
       <select
-        className="field w-auto py-1"
+        className="field w-40 truncate py-1"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-label={label}
@@ -85,13 +84,14 @@ export function Filters({
 }) {
   const { t } = useTranslation(["filters", "common"]);
   const domain = useDomainLabel();
+  // Search now filters an already-fetched, in-memory list, so it can update
+  // on every keystroke instead of waiting out a debounce for a network call.
   const [search, setSearch] = useState(filters.q);
-  const debounced = useDebounced(search, 300);
 
-  useEffect(() => {
-    if (debounced !== filters.q) onChange({ q: debounced });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debounced]);
+  function updateSearch(v: string) {
+    setSearch(v);
+    onChange({ q: v });
+  }
 
   useEffect(() => {
     setSearch(filters.q);
@@ -107,7 +107,7 @@ export function Filters({
         className="field w-56 py-1"
         placeholder={t("filters:searchPlaceholder")}
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => updateSearch(e.target.value)}
         aria-label={t("common:actions.search")}
       />
 
@@ -170,7 +170,10 @@ export function Filters({
       />
 
       {active > 0 && (
-        <button className="btn py-1" onClick={onReset}>
+        <button
+          className="btn py-1 border-critical/40 text-critical hover:bg-critical/10"
+          onClick={onReset}
+        >
           {t("common:actions.clearFilters")} ({active})
         </button>
       )}

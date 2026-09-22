@@ -35,11 +35,15 @@ const DOUBLE_WIDTH = BASE_WIDTH * 2;
 /** Address gets 70% of the double width — narrower than most columns, since
  * the full value is still reachable via inline edit. */
 const ADDRESS_WIDTH = Math.round(DOUBLE_WIDTH * 0.7);
+/** Tuition needs room for a status chip plus an amount, but not a full double width. */
+const TUITION_WIDTH = Math.round(BASE_WIDTH * 1.6);
+/** Late/absence/contact-count only ever hold a couple of digits. */
+const NARROW_WIDTH = 90;
 
 export const COLUMNS: ColumnDef[] = [
   { key: "studentId", labelKey: "studentId", field: "studentId", kind: "text", width: BASE_WIDTH, sortable: true, defaultVisible: true, sticky: true },
   { key: "nameEn", labelKey: "nameEn", field: "nameEn", kind: "text", width: DOUBLE_WIDTH, sortable: true, defaultVisible: true, sticky: true },
-  { key: "nameKo", labelKey: "nameKo", field: "nameKo", kind: "text", width: BASE_WIDTH, sortable: true, defaultVisible: true },
+  { key: "nameKo", labelKey: "nameKo", field: "nameKo", kind: "text", width: BASE_WIDTH, sortable: true, defaultVisible: false },
   { key: "birthDate", labelKey: "birthDate", field: "birthDate", kind: "date", width: BASE_WIDTH, sortable: true, defaultVisible: true },
   { key: "gender", labelKey: "gender", field: "gender", kind: "select", options: ["", ...GENDERS], width: BASE_WIDTH, sortable: true, defaultVisible: false },
   { key: "level", labelKey: "level", field: "level", kind: "select", options: LEVELS, width: BASE_WIDTH, sortable: true, defaultVisible: true },
@@ -57,9 +61,10 @@ export const COLUMNS: ColumnDef[] = [
   { key: "mobile", labelKey: "mobile", field: "mobile", kind: "text", width: BASE_WIDTH, sortable: true, defaultVisible: true },
   { key: "phone", labelKey: "phone", field: "phone", kind: "text", width: BASE_WIDTH, sortable: true, defaultVisible: false },
   { key: "email", labelKey: "email", field: "email", kind: "text", width: BASE_WIDTH, sortable: true, defaultVisible: false },
-  { key: "tuition", labelKey: "tuition", field: "tuition.status", kind: "tuition", width: DOUBLE_WIDTH, sortable: true, defaultVisible: true },
-  { key: "absences", labelKey: "absences", field: "attendance.absences", kind: "number", width: BASE_WIDTH, sortable: true, defaultVisible: true, align: "right" },
-  { key: "contactCount", labelKey: "contactCount", field: "contactCount", kind: "number", width: BASE_WIDTH, sortable: true, defaultVisible: true, align: "right" },
+  { key: "tuition", labelKey: "tuition", field: "tuition.status", kind: "tuition", width: TUITION_WIDTH, sortable: true, defaultVisible: true },
+  { key: "late", labelKey: "late", field: "attendance.late", kind: "number", width: NARROW_WIDTH, sortable: true, defaultVisible: true, align: "right" },
+  { key: "absences", labelKey: "absences", field: "attendance.absences", kind: "number", width: NARROW_WIDTH, sortable: true, defaultVisible: true, align: "right" },
+  { key: "contactCount", labelKey: "contactCount", field: "contactCount", kind: "number", width: NARROW_WIDTH, sortable: true, defaultVisible: true, align: "right" },
   { key: "memo", labelKey: "memo", field: "memo", kind: "text", width: BASE_WIDTH, sortable: false, defaultVisible: false },
   { key: "consult", labelKey: "consult", field: "", kind: "consult", width: BASE_WIDTH, sortable: false, defaultVisible: true },
 ];

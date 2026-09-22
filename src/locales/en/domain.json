@@ -1,6 +1,6 @@
 {
   "level": { "undergraduate": "Undergraduate", "graduate": "Graduate" },
-  "studentType": { "new": "New student", "continuing": "Continuing student" },
+  "studentType": { "new": "Freshman", "continuing": "Enrolled" },
   "gender": { "male": "Male", "female": "Female" },
   "enrollStatus": {
     "enrolled": "Enrolled",

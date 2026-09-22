@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api, ApiError, type StudentPage } from "../api";
@@ -11,6 +11,7 @@ import { AddStudentModal } from "./AddStudentModal";
 import { ConsultModal } from "./ConsultModal";
 import { COLUMNS, DEFAULT_VISIBLE, getPath, type ColumnDef } from "./columns";
 import { useUrlState } from "../hooks";
+import { filterStudents, paginate, sortStudents } from "../lib/studentFilter";
 import { type Role, type Student, type Tuition } from "../../shared/domain";
 
 const PAGE_SIZES = [25, 50, 100, 200];
@@ -67,10 +68,23 @@ export function StudentsTable({
   const [state, setState] = useUrlState({ ...DEFAULTS, ...(initialFilter ?? {}) });
   const [visible, setVisible] = useState<string[]>(DEFAULT_VISIBLE);
   const [showColumns, setShowColumns] = useState(false);
+  const columnsRef = useRef<HTMLDivElement>(null);
   const [adding, setAdding] = useState(false);
   const [consultFor, setConsultFor] = useState<Student | null>(null);
   const qc = useQueryClient();
 
+  useEffect(() => {
+    if (!showColumns) return;
+    function onOutside(e: MouseEvent) {
+      if (columnsRef.current && !columnsRef.current.contains(e.target as Node)) {
+        setShowColumns(false);
+      }
+    }
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, [showColumns]);
+
+  // Kept only for the CSV export link, which still filters server-side.
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(state)) {
@@ -80,14 +94,31 @@ export function StudentsTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(state)]);
 
-  const queryKey = ["students", queryString] as const;
+  // The full roster is fetched once and cached; search/filter/sort/page all
+  // run in memory against it instead of round-tripping per keystroke.
+  const queryKey = ["students", "all"] as const;
   const { data, isLoading, error } = useQuery({
     queryKey,
-    queryFn: () => api.students(queryString),
-    placeholderData: (prev) => prev,
+    queryFn: () => api.students("all=1"),
+    staleTime: 60_000,
   });
 
-  const rows = data?.rows ?? [];
+  const allRows = data?.rows ?? [];
+  const filtered = useMemo(
+    () => filterStudents(allRows, filterOnly(state)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allRows, JSON.stringify(filterOnly(state))]
+  );
+  const sorted = useMemo(
+    () => sortStudents(filtered, state.sort, state.dir),
+    [filtered, state.sort, state.dir]
+  );
+
+  const total = sorted.length;
+  const limit = Number(state.limit) || 50;
+  const page = Number(state.page) || 1;
+  const pages = Math.max(1, Math.ceil(total / limit));
+  const rows = useMemo(() => paginate(sorted, page, limit), [sorted, page, limit]);
   const cols = COLUMNS.filter((c) => visible.includes(c.key));
 
   /* ------------------------------------------------------- inline editing */
@@ -182,8 +213,6 @@ export function StudentsTable({
 
   /* ---------------------------------------------------------------- render */
 
-  const page = Number(state.page) || 1;
-  const pages = data?.pages ?? 1;
   const exportHref = `/api/export.csv?${queryString}`;
   const colLabel = (col: ColumnDef) => t(`students:columns.${col.labelKey}`);
 
@@ -194,7 +223,7 @@ export function StudentsTable({
           filters={filterOnly(state) as unknown as FilterState}
           onChange={(p) => setState({ ...p, page: "1" } as Record<string, string>)}
           onReset={() => setState({ ...EMPTY_FILTERS, page: "1" })}
-          total={data?.total ?? 0}
+          total={total}
           exportHref={canWrite ? exportHref : undefined}
         />
 
@@ -205,7 +234,7 @@ export function StudentsTable({
             </button>
           )}
 
-          <div className="relative">
+          <div className="relative" ref={columnsRef}>
             <button className="btn py-1" onClick={() => setShowColumns((v) => !v)}>
               {t("students:toolbar.columnsButton")} ({cols.length}/{COLUMNS.length})
             </button>
