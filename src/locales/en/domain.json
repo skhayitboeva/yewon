@@ -1,7 +1,16 @@
 {
-  "level": { "undergraduate": "Undergraduate", "graduate": "Graduate" },
-  "studentType": { "new": "Freshman", "continuing": "Enrolled" },
-  "gender": { "male": "Male", "female": "Female" },
+  "level": {
+    "undergraduate": "Undergraduate",
+    "graduate": "Graduate"
+  },
+  "studentType": {
+    "new": "Freshman",
+    "continuing": "Enrolled"
+  },
+  "gender": {
+    "male": "Male",
+    "female": "Female"
+  },
   "enrollStatus": {
     "enrolled": "Enrolled",
     "leave": "Leave of absence",
@@ -11,9 +20,21 @@
     "withdrawn": "Withdrawn",
     "deleted": "Deleted"
   },
-  "admissionType": { "new": "New admission", "transfer": "Transfer admission", "readmission": "Readmission" },
-  "course": { "none": "N/A", "masters": "Master's course", "doctoral": "Doctoral course" },
-  "tuitionStatus": { "paidInFull": "Paid in full", "partial": "Partially paid", "unpaid": "Unpaid" },
+  "admissionType": {
+    "new": "New admission",
+    "transfer": "Transfer admission",
+    "readmission": "Readmission"
+  },
+  "course": {
+    "none": "N/A",
+    "masters": "Master's course",
+    "doctoral": "Doctoral course"
+  },
+  "tuitionStatus": {
+    "paidInFull": "Paid in full",
+    "partial": "Partially paid",
+    "unpaid": "Unpaid"
+  },
   "consultCategory": {
     "tuition": "Tuition",
     "attendance": "Attendance",
@@ -33,6 +54,6 @@
     "good": "Good (0)",
     "a1": "1 absence",
     "a23": "2–3 absences",
-    "a4": "4+ absences (F risk)"
+    "a4": "4+ absences in one course (F risk)"
   }
 }

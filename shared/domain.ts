@@ -32,12 +32,14 @@ export type ConsultCategory = (typeof CONSULT_CATEGORIES)[number];
 
 export const CONSULT_METHODS = ["대면", "전화", "카카오톡", "이메일", "기타"] as const;
 
-/** 출결 구간 — 대시보드 카드와 표 필터가 같은 정의를 쓴다. */
+/** 출결 구간 — 대시보드 카드와 표 필터가 같은 정의를 쓴다.
+ * "전체" 모드에서는 riskAbsences(대면·온라인 중 큰 값) 기준이므로
+ * a4 는 "어느 한 과목에서 4회 이상"을 뜻한다 — 두 과목 합계가 아니다. */
 export const ABSENCE_BUCKETS = [
   { key: "good", label: "양호 (0회)", min: 0, max: 0 },
   { key: "a1", label: "결석 1회", min: 1, max: 1 },
   { key: "a23", label: "결석 2–3회", min: 2, max: 3 },
-  { key: "a4", label: "결석 4회 이상 (F 대상)", min: 4, max: null },
+  { key: "a4", label: "결석 4회 이상 (한 과목 기준, F 대상)", min: 4, max: null },
 ] as const;
 export type AbsenceBucketKey = (typeof ABSENCE_BUCKETS)[number]["key"];
 
@@ -51,9 +53,127 @@ export interface Tuition {
   note: string;
 }
 
+/** 주차별 출결(weekly_attendance)에서 계산해 학생 문서에 캐시하는 값들.
+ * 필터·통계·정렬·CSV 가 전부 이 스칼라를 읽기 때문에 남겨 둔다.
+ * note 를 제외하면 직접 쓰지 말 것 — attendanceTotals() 가 유일한 출처다. */
 export interface Attendance {
+  /** 대면 + 온라인 합계. 표에 보여 주는 값. */
   absences: number;
+  late: number;
+  absencesOffline: number;
+  absencesOnline: number;
+  lateOffline: number;
+  lateOnline: number;
+  /** max(대면, 온라인) — 결석 구간/통계/필터가 읽는 값. 아래 설명 참고. */
+  riskAbsences: number;
+  /** 손으로 입력하는 유일한 출결 필드. */
   note: string;
+}
+
+/* ------------------------------------------------------------- 주차별 출결 */
+
+/** 한 학기는 16주. 그리드의 열 수이자 유효한 주차 범위. */
+export const SEMESTER_WEEKS = 16;
+
+/** 대면 수업은 매주, 온라인 수업은 월말에 한 번 집계된다. */
+export const ATTENDANCE_MODES = ["offline", "online"] as const;
+export type AttendanceMode = (typeof ATTENDANCE_MODES)[number];
+
+/** null = 출석(빈 칸). 칸을 누르면 이 순서로 순환한다. */
+export type AttendanceMark = "absent" | "late" | null;
+
+export function nextMark(mark: AttendanceMark): AttendanceMark {
+  return mark === null ? "absent" : mark === "absent" ? "late" : null;
+}
+
+export interface WeekCells {
+  offline: AttendanceMark;
+  online: AttendanceMark;
+}
+
+/** 학생 한 명의 한 학기 기록. weeks 의 키는 "1"~"16" 문자열 —
+ * 배열이 아니라 맵이어야 `weeks.7.offline` 한 칸만 $set 할 수 있다. */
+export interface WeeklyAttendance {
+  /** 학번 — consultations 와 같은 외래키. Mongo _id 가 아니다. */
+  studentId: string;
+  year: number;
+  semester: 1 | 2;
+  weeks: Record<string, WeekCells>;
+  /** legacy-import = 옛 총계를 임시 주차에 배치한 문서. */
+  source?: "manual" | "legacy-import" | "sheet-import";
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export const WEEK_KEYS: string[] = Array.from({ length: SEMESTER_WEEKS }, (_, i) =>
+  String(i + 1)
+);
+
+export function emptyWeeks(): Record<string, WeekCells> {
+  return Object.fromEntries(WEEK_KEYS.map((k) => [k, { offline: null, online: null }]));
+}
+
+/** 저장된 문서에는 손댄 칸만 들어 있으므로 읽을 때 16주 전체로 채운다. */
+export function normalizeWeeks(
+  weeks?: Record<string, Partial<WeekCells>> | null
+): Record<string, WeekCells> {
+  const out = emptyWeeks();
+  for (const k of WEEK_KEYS) {
+    out[k] = { offline: weeks?.[k]?.offline ?? null, online: weeks?.[k]?.online ?? null };
+  }
+  return out;
+}
+
+export interface AttendanceTotals {
+  offline: { absences: number; late: number };
+  online: { absences: number; late: number };
+  /** 표시용 합계. */
+  absences: number;
+  late: number;
+  /** max(대면, 온라인). */
+  riskAbsences: number;
+}
+
+/** 대면과 온라인은 담당 교수가 다른 별개 과목이라 따로 센다. 한 과목에서만
+ * 4회여도 F 대상이므로 구간 판정은 합계가 아니라 둘 중 큰 값으로 한다.
+ * 규칙이 바뀌면 오직 이 함수만 고치면 된다 — 학생 문서의 attendance.* 는
+ * 이 결과의 캐시일 뿐이다. */
+export function attendanceTotals(
+  weeks?: Record<string, Partial<WeekCells>> | null
+): AttendanceTotals {
+  const per = {
+    offline: { absences: 0, late: 0 },
+    online: { absences: 0, late: 0 },
+  };
+  const full = normalizeWeeks(weeks);
+  for (const k of WEEK_KEYS) {
+    for (const mode of ATTENDANCE_MODES) {
+      const mark = full[k][mode];
+      if (mark === "absent") per[mode].absences += 1;
+      else if (mark === "late") per[mode].late += 1;
+    }
+  }
+  return {
+    offline: per.offline,
+    online: per.online,
+    absences: per.offline.absences + per.online.absences,
+    late: per.offline.late + per.online.late,
+    riskAbsences: Math.max(per.offline.absences, per.online.absences),
+  };
+}
+
+/** attendanceTotals() 결과를 학생 문서의 캐시 필드로 옮긴다. */
+export function totalsToAttendanceFields(t: AttendanceTotals): Omit<Attendance, "note"> {
+  return {
+    absences: t.absences,
+    late: t.late,
+    absencesOffline: t.offline.absences,
+    absencesOnline: t.online.absences,
+    lateOffline: t.offline.late,
+    lateOnline: t.online.late,
+    riskAbsences: t.riskAbsences,
+  };
 }
 
 export interface Student {
@@ -162,7 +282,8 @@ export interface Stats {
   tuitionStatus: Record<string, number>;
   terms: { term1: number; term2: number; term3: number; term4: number };
   tuitionSums: { billed: number; paid: number };
-  absence: Record<AbsenceBucketKey, number>;
+  /** all = riskAbsences(F 위험) 기준, offline/online 은 각 과목 결석 기준. */
+  absence: Record<"all" | "offline" | "online", Record<AbsenceBucketKey, number>>;
   cohorts: { cohort: string; level: string; count: number }[];
   consultByCategory: { category: string; records: number; students: number }[];
   recentConsults: {
@@ -186,7 +307,16 @@ export const EMPTY_TUITION: Tuition = {
   note: "",
 };
 
-export const EMPTY_ATTENDANCE: Attendance = { absences: 0, note: "" };
+export const EMPTY_ATTENDANCE: Attendance = {
+  absences: 0,
+  late: 0,
+  absencesOffline: 0,
+  absencesOnline: 0,
+  lateOffline: 0,
+  lateOnline: 0,
+  riskAbsences: 0,
+  note: "",
+};
 
 /** 입학일자 → 입학 코호트 ("2026-2"). 표의 코호트 필터에만 쓰인다. */
 export function cohortOf(admissionDate: string): string {

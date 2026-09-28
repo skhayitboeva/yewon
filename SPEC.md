@@ -75,8 +75,15 @@
     "term1":  0, "term2": 0, "term3": 0, "term4": 0,
     "note":   ""
   },
-  "attendance": {                  // 출결 — 수기 입력
-    "absences": 0,                 // 결석 횟수
+  "attendance": {                  // 출결 — weekly_attendance 에서 계산되는 파생값
+                                    // (note 만 수기 입력). 아래 3.1a 참고.
+    "absences": 0,                 // 결석 횟수 (대면+온라인 합계)
+    "late": 0,                     // 지각 횟수 (대면+온라인 합계)
+    "absencesOffline": 0,
+    "absencesOnline": 0,
+    "lateOffline": 0,
+    "lateOnline": 0,
+    "riskAbsences": 0,             // max(대면, 온라인) — F 위험 판정에 쓰는 값
     "note": ""
   },
   "contactCount": 0,               // 연락횟수 ← 신규, 수기 입력
@@ -93,8 +100,40 @@
 { major: 1 }
 { "tuition.status": 1 }
 { "attendance.absences": 1 }
+{ "attendance.riskAbsences": 1 }
 { admissionDate: 1 }
 { nameKo: "text", nameEn: "text", studentId: "text", mobile: "text" }
+```
+
+### 3.1a `weekly_attendance` 컬렉션
+
+학기는 16주, 대면 수업(매주 집계)과 온라인 수업(월말에 한 번 집계)이 각각 진행되고
+담당 교수가 다르다. 학생 한 명 · 한 학기당 문서 하나:
+
+```js
+{
+  "studentId": "202512345",        // 학번 — students 와 같은 외래키 (Mongo _id 아님)
+  "year": 2026,
+  "semester": 2,
+  "weeks": {                       // 키는 "1".."16" — 손댄 칸만 들어 있다
+    "3":  { "offline": "absent", "online": null },
+    "7":  { "offline": "late",   "online": "absent" }
+    // ...
+  },
+  "source": "manual",              // manual | legacy-import | sheet-import
+  "createdAt": ISODate, "updatedAt": ISODate, "updatedBy": "admin"
+}
+```
+
+`GET /api/students/:id/attendance` 는 이번 학기(설정값 기준) 기록을 16주 전체로
+채워 돌려준다. `PATCH` 는 칸 단위로 `{"marks":[{"week":3,"mode":"offline","value":"absent"}]}`
+를 받아 그 칸만 `$set` 하고, 같은 요청에서 `students.attendance.*` 파생 필드를
+다시 계산해 캐시한다 — 표/필터/통계/CSV 는 전부 이 캐시를 읽는다.
+
+**인덱스**
+```
+{ studentId: 1, year: 1, semester: 1 }   unique
+{ year: 1, semester: 1 }
 ```
 
 ### 3.2 `consultations` 컬렉션
@@ -174,12 +213,21 @@
 
 ### 4.3 출결
 
-| 구간 | 정의 |
+대면과 온라인은 담당 교수가 달라 F 판정도 따로 난다 — 결석 구간은 합계가
+아니라 **`riskAbsences`(대면·온라인 중 큰 값)** 기준이다. 카드 위 전체/대면/온라인
+스위치로 어느 과목 기준인지 바꿔 볼 수 있고, 클릭해서 학생 탭으로 이동할 때도
+같은 과목 필터가 적용된다.
+
+| 구간 | 정의 (전체 = `riskAbsences` 기준) |
 |---|---|
-| 양호 | `absences = 0` |
-| 결석 1회 | `absences = 1` |
-| 결석 2–3회 | `absences` 2~3 |
-| **결석 4회 이상 (F 대상)** | `absences >= 4` — 빨간색 강조 |
+| 양호 | `= 0` |
+| 결석 1회 | `= 1` |
+| 결석 2–3회 | `2~3` |
+| **결석 4회 이상 (한 과목 기준, F 대상)** | `>= 4` — 빨간색 강조 |
+
+결석/지각은 학생 탭에서 직접 입력하지 않는다 — 주차별 출결 그리드(대면 16주 +
+온라인 16주, 칸을 누르면 출석→결석→지각 순환)에서 계산되는 파생값이다. 그리드는
+학생 행을 펼치거나 출결 이력 모달에서 편집한다.
 
 ### 4.4 상담
 
@@ -210,7 +258,7 @@
 | 15 | **휴대전화** | ✎ | ✓ | **신규** |
 | 16 | 이메일 | ✎ | ✓ | |
 | 17 | **등록금** | ✎ 확장 | ✓ | 상태 드롭다운 + 총액/1~4차 금액 — 아래 5.2 |
-| 18 | **결석(출석)** | ✎ number | ✓ | **헤더 클릭 정렬** |
+| 18 | **결석(출석)** | 대면·온라인 클릭 확장 | ✓ | 파생값(읽기전용) — 클릭하면 주차별 그리드가 행 아래로 펼쳐진다. **헤더 클릭 정렬** |
 | 19 | **연락횟수** | ✎ number | ✓ | **신규** |
 | 20 | **상담** | 버튼 | — | 기록 건수 배지 + 모달 열기 |
 
@@ -293,9 +341,10 @@
 | POST | `/api/logout` | 쿠키 삭제 |
 | GET | `/api/me` | 세션 유효성 확인 |
 | GET | `/api/stats` | 대시보드 집계 (단일 aggregation) |
-| GET | `/api/students` | `q, level, major, tuitionStatus, term, absenceBucket, cohort, sort, dir, page, limit` |
+| GET | `/api/students` | `q, level, major, tuitionStatus, term, absence, absenceMode, cohort, sort, dir, page, limit` (실제 파라미터명은 `absence` — 코드 기준) |
 | POST | `/api/students` | 학생 추가 |
-| PATCH | `/api/students/:id` | 부분 수정 |
+| PATCH | `/api/students/:id` | 부분 수정 (출결은 `note` 만 — 결석/지각은 아래 주차별 출결에서 계산됨) |
+| GET/PATCH | `/api/students/:id/attendance` | 주차별 출결 조회/칸 단위 수정 — 3.1a 참고 |
 | GET | `/api/facets` | 필터 드롭다운 값 (전공 · 입학 코호트) |
 | DELETE | `/api/students/:id` | 삭제 |
 | GET | `/api/consultations?studentId=` | 학생별 상담 이력 |

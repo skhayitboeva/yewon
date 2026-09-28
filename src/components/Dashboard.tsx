@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
@@ -90,8 +90,18 @@ function Section({ title, note, children }: { title: string; note?: string; chil
   );
 }
 
+type AbsenceMode = "all" | "offline" | "online";
+
+/** 카드가 보여 주는 과목(대면/온라인/전체)과 클릭했을 때 여는 필터가 같은
+ * 기준을 쓰도록 한다 — 안 그러면 "온라인 4회 이상" 카드를 눌렀는데 합계
+ * 기준으로 필터링된 목록이 열리는, 이 기능이 없애려는 바로 그 버그가 난다. */
+function withMode(filter: DrillFilter, mode: AbsenceMode): DrillFilter {
+  return mode === "all" ? filter : { ...filter, absenceMode: mode };
+}
+
 export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void }) {
   const { data, isLoading, error } = useQuery({ queryKey: ["stats"], queryFn: api.stats });
+  const [absenceMode, setAbsenceMode] = useState<AbsenceMode>("all");
   const { t } = useTranslation(["dashboard", "common"]);
   const domain = useDomainLabel();
 
@@ -110,7 +120,7 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
     year: s.settings.currentYear,
     term: s.settings.currentSemester,
   });
-  const absence = s.absence;
+  const absence = s.absence[absenceMode];
   const tuition = s.tuitionStatus;
   const unpaidAmount = Math.max(0, (s.tuitionSums.billed || 0) - (s.tuitionSums.paid || 0));
   const won = (n: number) => t("dashboard:tuition.won", { amount: formatKRW(n) });
@@ -236,37 +246,54 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
 
       {/* ------------------------------------------------------------ 출결 */}
       <Section title={t("dashboard:sections.attendance")}>
+        <div className="mb-3 inline-flex rounded-lg border border-line bg-surface p-0.5 text-xs font-semibold">
+          {(["all", "offline", "online"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setAbsenceMode(m)}
+              className={`rounded-md px-2.5 py-1 transition ${
+                absenceMode === m ? "bg-brand text-white" : "text-ink2 hover:bg-plane"
+              }`}
+            >
+              {t(`dashboard:attendance.mode.${m}`)}
+            </button>
+          ))}
+        </div>
         <StatusListCard
           title={t("dashboard:attendance.status")}
-          note={absence.a4 > 0 ? t("dashboard:attendance.urgentNote") : undefined}
+          note={
+            (absence.a4 > 0 ? t("dashboard:attendance.urgentNote") + " · " : "") +
+            t(`dashboard:attendance.mode.${absenceMode}Subtitle`)
+          }
           rows={[
             {
               key: "good",
               label: domain.absenceBucket("good"),
               value: absence.good,
               tone: "good",
-              onClick: () => onDrill({ absence: "good" }),
+              onClick: () => onDrill(withMode({ absence: "good" }, absenceMode)),
             },
             {
               key: "a1",
               label: domain.absenceBucket("a1"),
               value: absence.a1,
               tone: "warning",
-              onClick: () => onDrill({ absence: "a1" }),
+              onClick: () => onDrill(withMode({ absence: "a1" }, absenceMode)),
             },
             {
               key: "a23",
               label: domain.absenceBucket("a23"),
               value: absence.a23,
               tone: "serious",
-              onClick: () => onDrill({ absence: "a23" }),
+              onClick: () => onDrill(withMode({ absence: "a23" }, absenceMode)),
             },
             {
               key: "a4",
               label: domain.absenceBucket("a4"),
               value: absence.a4,
               tone: "critical",
-              onClick: () => onDrill({ absence: "a4" }),
+              onClick: () => onDrill(withMode({ absence: "a4" }, absenceMode)),
             },
           ]}
         />

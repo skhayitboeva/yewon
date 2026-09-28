@@ -21,10 +21,14 @@
     "phone": "Qo'shimcha telefon",
     "email": "Elektron pochta",
     "tuition": "Kontrakt",
+    "late": "Kechikish",
     "absences": "Qoldirilgan darslar",
+    "absencesOffline": "Qoldirilgan (Ma'ruza)",
+    "absencesOnline": "Qoldirilgan (Onlayn)",
     "contactCount": "Aloqa soni",
     "memo": "Izoh",
-    "consult": "Maslahat"
+    "consult": "Maslahat",
+    "attendance": "Davomat"
   },
   "toolbar": {
     "addStudent": "Talaba qo'shish",
@@ -45,6 +49,8 @@
     "confirmDelete": "{{name}} ({{studentId}}) o'chiriladi. Davom etasizmi?",
     "createdToast": "Talaba qo'shildi.",
     "deletedToast": "Talaba o'chirildi.",
-    "resetPasswordToast": "Parol tiklandi."
+    "resetPasswordToast": "Parol tiklandi.",
+    "attendanceExpand": "Haftalik davomatni ko'rish",
+    "attendanceCollapse": "Yopish"
   }
 }

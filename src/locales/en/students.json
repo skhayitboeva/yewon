@@ -21,10 +21,14 @@
     "phone": "Phone",
     "email": "Email",
     "tuition": "Tuition",
+    "late": "Late",
     "absences": "Absences",
+    "absencesOffline": "Absences (Offline)",
+    "absencesOnline": "Absences (Online)",
     "contactCount": "Contact Count",
     "memo": "Memo",
-    "consult": "Consult"
+    "consult": "Consult",
+    "attendance": "Attendance"
   },
   "toolbar": {
     "addStudent": "Add Student",
@@ -45,6 +49,8 @@
     "confirmDelete": "This will delete {{name}} ({{studentId}}). Continue?",
     "createdToast": "Student added.",
     "deletedToast": "Student deleted.",
-    "resetPasswordToast": "Password reset."
+    "resetPasswordToast": "Password reset.",
+    "attendanceExpand": "View weekly attendance",
+    "attendanceCollapse": "Close"
   }
 }

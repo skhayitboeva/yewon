@@ -19,6 +19,20 @@ if (!URI) {
 
 const replace = process.argv.includes("--replace");
 
+// shared/domain.ts 의 EMPTY_ATTENDANCE 와 같은 모양을 유지할 것 —
+// data/students.seed.json 은 예전 {absences, note} 모양이라 이 기본값과
+// 병합하지 않으면 결석 구간 필터가 새로 넣는 학생을 아예 찾지 못한다.
+const EMPTY_ATTENDANCE = {
+  absences: 0,
+  late: 0,
+  absencesOffline: 0,
+  absencesOnline: 0,
+  lateOffline: 0,
+  lateOnline: 0,
+  riskAbsences: 0,
+  note: "",
+};
+
 const client = new MongoClient(URI);
 await client.connect();
 const db = client.db(DB);
@@ -31,6 +45,7 @@ await students.createIndex({ studentType: 1 }, { name: "studentType" });
 await students.createIndex({ major: 1 }, { name: "major" });
 await students.createIndex({ "tuition.status": 1 }, { name: "tuition_status" });
 await students.createIndex({ "attendance.absences": 1 }, { name: "absences" });
+await students.createIndex({ "attendance.riskAbsences": 1 }, { name: "riskAbsences" });
 await students.createIndex({ admissionDate: 1 }, { name: "admissionDate" });
 await students.createIndex(
   { telegramId: 1 },
@@ -48,6 +63,13 @@ await attempts.createIndex({ ip: 1, at: -1 }, { name: "ip_at" });
 
 const accessRequests = db.collection("access_requests");
 await accessRequests.createIndex({ status: 1, createdAt: -1 }, { name: "status_createdAt" });
+
+const weeklyAttendance = db.collection("weekly_attendance");
+await weeklyAttendance.createIndex(
+  { studentId: 1, year: 1, semester: 1 },
+  { unique: true, name: "uniq_student_term" }
+);
+await weeklyAttendance.createIndex({ year: 1, semester: 1 }, { name: "term" });
 
 console.log("인덱스 생성 완료");
 
@@ -95,7 +117,7 @@ const ops = raw.map((s) => ({
         studentId: s.studentId,
         studentType: "재학생",
         tuition: s.tuition,
-        attendance: s.attendance,
+        attendance: { ...EMPTY_ATTENDANCE, ...(s.attendance || {}) },
         contactCount: 0,
         memo: "",
         createdAt: now,

@@ -1,7 +1,16 @@
 {
-  "level": { "undergraduate": "학부", "graduate": "대학원" },
-  "studentType": { "new": "신입생", "continuing": "재학생" },
-  "gender": { "male": "남", "female": "여" },
+  "level": {
+    "undergraduate": "학부",
+    "graduate": "대학원"
+  },
+  "studentType": {
+    "new": "신입생",
+    "continuing": "재학생"
+  },
+  "gender": {
+    "male": "남",
+    "female": "여"
+  },
   "enrollStatus": {
     "enrolled": "재학",
     "leave": "휴학",
@@ -11,9 +20,21 @@
     "withdrawn": "자퇴",
     "deleted": "삭제"
   },
-  "admissionType": { "new": "신입학", "transfer": "편입학", "readmission": "재입학" },
-  "course": { "none": "해당 없음", "masters": "석사과정", "doctoral": "박사과정" },
-  "tuitionStatus": { "paidInFull": "완납", "partial": "부분납부", "unpaid": "미납" },
+  "admissionType": {
+    "new": "신입학",
+    "transfer": "편입학",
+    "readmission": "재입학"
+  },
+  "course": {
+    "none": "해당 없음",
+    "masters": "석사과정",
+    "doctoral": "박사과정"
+  },
+  "tuitionStatus": {
+    "paidInFull": "완납",
+    "partial": "부분납부",
+    "unpaid": "미납"
+  },
   "consultCategory": {
     "tuition": "등록금",
     "attendance": "출석",
@@ -33,6 +54,6 @@
     "good": "양호 (0회)",
     "a1": "결석 1회",
     "a23": "결석 2–3회",
-    "a4": "결석 4회 이상 (F 대상)"
+    "a4": "결석 4회 이상 (한 과목 기준, F 대상)"
   }
 }

@@ -2,11 +2,13 @@ import { z } from "zod";
 import { HttpError } from "./http.mts";
 import {
   ADMISSION_TYPES,
+  ATTENDANCE_MODES,
   CONSULT_CATEGORIES,
   CONSULT_METHODS,
   ENROLL_STATUSES,
   GENDERS,
   LEVELS,
+  SEMESTER_WEEKS,
   STUDENT_TYPES,
   TUITION_STATUSES,
 } from "../../shared/domain.ts";
@@ -37,8 +39,30 @@ export const tuitionSchema = z.object({
 
 export const attendanceSchema = z.object({
   absences: z.number().int().min(0).max(999),
+  late: z.number().int().min(0).max(999),
   note: str(500),
 });
+
+/** PATCH /api/students/:id 로 직접 쓸 수 있는 출결 필드는 비고뿐이다.
+ * absences/late 등은 weekly_attendance 에서 계산되므로 .strict() 가
+ * 옛 클라이언트의 숫자 입력을 400 으로 거절한다. */
+export const attendancePatchSchema = z.object({ note: str(500) }).strict();
+
+/** 칸 하나(클릭) ~ 32칸(일괄 지우기/시트 가져오기)까지 한 번에 보낸다. */
+export const attendanceMarksSchema = z
+  .object({
+    marks: z
+      .array(
+        z.object({
+          week: z.number().int().min(1).max(SEMESTER_WEEKS),
+          mode: z.enum(ATTENDANCE_MODES),
+          value: z.union([z.literal("absent"), z.literal("late"), z.null()]),
+        })
+      )
+      .min(1, "변경할 항목이 없습니다.")
+      .max(SEMESTER_WEEKS * ATTENDANCE_MODES.length),
+  })
+  .strict();
 
 export const studentCreateSchema = z.object({
   studentId: str(40).min(1, "학번은 필수입니다."),
@@ -75,7 +99,7 @@ export const studentPatchSchema = studentCreateSchema
   .partial()
   .extend({
     tuition: tuitionSchema.partial().optional(),
-    attendance: attendanceSchema.partial().optional(),
+    attendance: attendancePatchSchema.optional(),
   })
   .strict();
 

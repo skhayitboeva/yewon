@@ -20,6 +20,7 @@ export interface FilterState {
   tuitionStatus: string;
   term: string;
   absence: string;
+  absenceMode: string;
   cohort: string;
 }
 
@@ -32,6 +33,7 @@ export const EMPTY_FILTERS: FilterState = {
   tuitionStatus: "",
   term: "",
   absence: "",
+  absenceMode: "",
   cohort: "",
 };
 
@@ -160,6 +162,16 @@ export function Filters({
         options={[
           all(t("filters:attendance.all")),
           ...ABSENCE_BUCKETS.map((b) => ({ value: b.key, label: domain.absenceBucket(b.key) })),
+        ]}
+      />
+      <Select
+        label={t("filters:absenceMode.label")}
+        value={filters.absenceMode}
+        onChange={(v) => onChange({ absenceMode: v })}
+        options={[
+          { value: "", label: t("filters:absenceMode.all") },
+          { value: "offline", label: t("filters:absenceMode.offline") },
+          { value: "online", label: t("filters:absenceMode.online") },
         ]}
       />
       <Select

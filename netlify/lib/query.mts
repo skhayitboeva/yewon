@@ -41,8 +41,21 @@ export const SORTABLE_FIELDS = new Set([
   "tuition.term3",
   "tuition.term4",
   "attendance.absences",
+  "attendance.late",
+  "attendance.absencesOffline",
+  "attendance.absencesOnline",
+  "attendance.lateOffline",
+  "attendance.lateOnline",
+  "attendance.riskAbsences",
   "contactCount",
 ]);
+
+/** absence 버킷이 읽는 필드 — mode 에 따라 대면/온라인/전체(F 위험) 중 하나를 고른다. */
+function absenceField(mode: string | null): string {
+  if (mode === "offline") return "attendance.absencesOffline";
+  if (mode === "online") return "attendance.absencesOnline";
+  return "attendance.riskAbsences";
+}
 
 export interface ListParams {
   filter: Filter<Document>;
@@ -86,7 +99,7 @@ export function buildStudentQuery(url: URL): ListParams {
     if (bucket) {
       const range: Record<string, number> = { $gte: bucket.min };
       if (bucket.max !== null) range.$lte = bucket.max;
-      and.push({ "attendance.absences": range });
+      and.push({ [absenceField(p.get("absenceMode"))]: range });
     }
   }
 

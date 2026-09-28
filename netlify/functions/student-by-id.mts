@@ -27,6 +27,21 @@ export default handler(async (req, ctx: Context) => {
         _id: { $ne: oid(id) },
       });
       if (clash) throw new HttpError(409, `학번 ${patch.studentId} 은(는) 이미 사용 중입니다.`);
+
+      // 학번이 바뀌면 학번을 외래키로 쓰는 문서들도 따라가야 한다.
+      const prev = await students.findOne({ _id: oid(id) }, { projection: { studentId: 1 } });
+      if (prev && prev.studentId !== patch.studentId) {
+        const weekly = await coll(COLLECTIONS.weeklyAttendance);
+        await weekly.updateMany(
+          { studentId: prev.studentId },
+          { $set: { studentId: patch.studentId } }
+        );
+        const consultations = await coll(COLLECTIONS.consultations);
+        await consultations.updateMany(
+          { studentId: prev.studentId },
+          { $set: { studentId: patch.studentId } }
+        );
+      }
     }
 
     if (patch.tuition && Object.keys(patch.tuition).length > 0) {
@@ -61,6 +76,8 @@ export default handler(async (req, ctx: Context) => {
     await students.deleteOne({ _id: oid(id) });
     const consultations = await coll(COLLECTIONS.consultations);
     await consultations.deleteMany({ studentId: found.studentId });
+    const weekly = await coll(COLLECTIONS.weeklyAttendance);
+    await weekly.deleteMany({ studentId: found.studentId });
     return json({ ok: true });
   }
 

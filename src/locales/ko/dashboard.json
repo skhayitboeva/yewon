@@ -27,7 +27,15 @@
   },
   "attendance": {
     "status": "출결 현황",
-    "urgentNote": "결석 4회 이상은 즉시 상담 필요"
+    "urgentNote": "결석 4회 이상은 즉시 상담 필요",
+    "mode": {
+      "all": "전체(F 위험)",
+      "offline": "대면",
+      "online": "온라인",
+      "allSubtitle": "대면·온라인 중 큰 값(F 위험) 기준",
+      "offlineSubtitle": "대면 수업 결석 기준",
+      "onlineSubtitle": "온라인 수업 결석 기준"
+    }
   },
   "consult": {
     "recent": "최근 상담",

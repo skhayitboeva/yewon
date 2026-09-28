@@ -6,7 +6,7 @@ import {
   STUDENT_TYPES,
 } from "../../shared/domain";
 
-export type ColumnKind = "text" | "number" | "date" | "select" | "tuition" | "consult";
+export type ColumnKind = "text" | "number" | "date" | "select" | "tuition" | "consult" | "attendance";
 
 export interface ColumnDef {
   key: string;
@@ -62,8 +62,10 @@ export const COLUMNS: ColumnDef[] = [
   { key: "phone", labelKey: "phone", field: "phone", kind: "text", width: BASE_WIDTH, sortable: true, defaultVisible: false },
   { key: "email", labelKey: "email", field: "email", kind: "text", width: BASE_WIDTH, sortable: true, defaultVisible: false },
   { key: "tuition", labelKey: "tuition", field: "tuition.status", kind: "tuition", width: TUITION_WIDTH, sortable: true, defaultVisible: true },
-  { key: "late", labelKey: "late", field: "attendance.late", kind: "number", width: NARROW_WIDTH, sortable: true, defaultVisible: true, align: "right" },
-  { key: "absences", labelKey: "absences", field: "attendance.absences", kind: "number", width: NARROW_WIDTH, sortable: true, defaultVisible: true, align: "right" },
+  { key: "late", labelKey: "late", field: "attendance.late", kind: "attendance", width: NARROW_WIDTH, sortable: true, defaultVisible: false, align: "right" },
+  { key: "absences", labelKey: "absences", field: "attendance.absences", kind: "attendance", width: BASE_WIDTH, sortable: true, defaultVisible: true, align: "right" },
+  { key: "absencesOffline", labelKey: "absencesOffline", field: "attendance.absencesOffline", kind: "number", width: NARROW_WIDTH, sortable: true, defaultVisible: false, align: "right" },
+  { key: "absencesOnline", labelKey: "absencesOnline", field: "attendance.absencesOnline", kind: "number", width: NARROW_WIDTH, sortable: true, defaultVisible: false, align: "right" },
   { key: "contactCount", labelKey: "contactCount", field: "contactCount", kind: "number", width: NARROW_WIDTH, sortable: true, defaultVisible: true, align: "right" },
   { key: "memo", labelKey: "memo", field: "memo", kind: "text", width: BASE_WIDTH, sortable: false, defaultVisible: false },
   { key: "consult", labelKey: "consult", field: "", kind: "consult", width: BASE_WIDTH, sortable: false, defaultVisible: true },

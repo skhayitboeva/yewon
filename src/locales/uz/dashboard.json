@@ -27,7 +27,15 @@
   },
   "attendance": {
     "status": "Davomat holati",
-    "urgentNote": "4 va undan ortiq marta yo'q bo'lganlar uchun zudlik bilan maslahat kerak"
+    "urgentNote": "4 va undan ortiq marta yo'q bo'lganlar uchun zudlik bilan maslahat kerak",
+    "mode": {
+      "all": "Hammasi (F xavfi)",
+      "offline": "Ma'ruza",
+      "online": "Onlayn",
+      "allSubtitle": "Ma'ruza/onlayn ichida kattarog'i (F xavfi) bo'yicha",
+      "offlineSubtitle": "Ma'ruza darslarida qoldirish bo'yicha",
+      "onlineSubtitle": "Onlayn darslarda qoldirish bo'yicha"
+    }
   },
   "consult": {
     "recent": "So'nggi maslahatlar",

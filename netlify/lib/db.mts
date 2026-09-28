@@ -46,4 +46,5 @@ export const COLLECTIONS = {
   info: "info",
   loginAttempts: "login_attempts",
   accessRequests: "access_requests",
+  weeklyAttendance: "weekly_attendance",
 } as const;

@@ -26,7 +26,13 @@ export function filterStudents(rows: Student[], filters: Record<string, string>)
     if (filters.absence) {
       const bucket = ABSENCE_BUCKETS.find((b) => b.key === filters.absence);
       if (bucket) {
-        const n = s.attendance?.absences ?? 0;
+        const field =
+          filters.absenceMode === "offline"
+            ? "absencesOffline"
+            : filters.absenceMode === "online"
+              ? "absencesOnline"
+              : "riskAbsences";
+        const n = s.attendance?.[field] ?? 0;
         if (n < bucket.min || (bucket.max !== null && n > bucket.max)) return false;
       }
     }

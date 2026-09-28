@@ -257,7 +257,18 @@ const ops = docs
           $setOnInsert: {
             studentId: d.studentId,
             tuition: { status: "미납", total: 0, term1: 0, term2: 0, term3: 0, term4: 0, note: "" },
-            attendance: { absences: 0, note: "" },
+            // shared/domain.ts 의 EMPTY_ATTENDANCE 와 같은 모양을 유지할 것 —
+            // 이 필드가 빠지면 결석 구간 필터가 이 학생을 아예 찾지 못한다.
+            attendance: {
+              absences: 0,
+              late: 0,
+              absencesOffline: 0,
+              absencesOnline: 0,
+              lateOffline: 0,
+              lateOnline: 0,
+              riskAbsences: 0,
+              note: "",
+            },
             contactCount: 0,
             memo: "",
             createdAt: now,

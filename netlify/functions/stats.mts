@@ -4,20 +4,30 @@ import { requireRole } from "../lib/auth.mts";
 import { handler, json } from "../lib/http.mts";
 
 const gtZero = (field: string) => ({ $cond: [{ $gt: [`$${field}`, 0] }, 1, 0] });
-const inRange = (min: number, max: number | null) => ({
+const inRange = (field: string, min: number, max: number | null) => ({
   $cond: [
     max === null
-      ? { $gte: ["$attendance.absences", min] }
+      ? { $gte: [`$${field}`, min] }
       : {
-          $and: [
-            { $gte: ["$attendance.absences", min] },
-            { $lte: ["$attendance.absences", max] },
-          ],
+          $and: [{ $gte: [`$${field}`, min] }, { $lte: [`$${field}`, max] }],
         },
     1,
     0,
   ],
 });
+/** 결석 구간을 세는 $group 스테이지. all = riskAbsences(F 위험, 두 과목 중 큰 값),
+ * offline/online 은 각 과목 결석 기준. */
+const absenceGroup = (field: string) => [
+  {
+    $group: {
+      _id: null,
+      good: { $sum: inRange(field, 0, 0) },
+      a1: { $sum: inRange(field, 1, 1) },
+      a23: { $sum: inRange(field, 2, 3) },
+      a4: { $sum: inRange(field, 4, null) },
+    },
+  },
+];
 
 export default handler(async (req) => {
   await requireRole(req, ["admin", "manager"]);
@@ -77,17 +87,9 @@ export default handler(async (req) => {
             },
           ],
 
-          absence: [
-            {
-              $group: {
-                _id: null,
-                good: { $sum: inRange(0, 0) },
-                a1: { $sum: inRange(1, 1) },
-                a23: { $sum: inRange(2, 3) },
-                a4: { $sum: inRange(4, null) },
-              },
-            },
-          ],
+          absence: absenceGroup("attendance.riskAbsences"),
+          absenceOffline: absenceGroup("attendance.absencesOffline"),
+          absenceOnline: absenceGroup("attendance.absencesOnline"),
 
           cohorts: [
             {
@@ -184,7 +186,11 @@ export default handler(async (req) => {
     ),
     terms: first(facet.terms as any[], { term1: 0, term2: 0, term3: 0, term4: 0 }),
     tuitionSums: first(facet.tuitionSums as any[], { billed: 0, paid: 0 }),
-    absence: first(facet.absence as any[], { good: 0, a1: 0, a23: 0, a4: 0 }),
+    absence: {
+      all: first(facet.absence as any[], { good: 0, a1: 0, a23: 0, a4: 0 }),
+      offline: first(facet.absenceOffline as any[], { good: 0, a1: 0, a23: 0, a4: 0 }),
+      online: first(facet.absenceOnline as any[], { good: 0, a1: 0, a23: 0, a4: 0 }),
+    },
     cohorts: (facet.cohorts as any[]).map((r) => ({
       cohort: r._id.cohort,
       level: r._id.level,

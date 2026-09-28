@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api, ApiError, type StudentPage } from "../api";
@@ -9,6 +9,8 @@ import { TuitionCell } from "./TuitionCell";
 import { Filters, EMPTY_FILTERS, type FilterState } from "./Filters";
 import { AddStudentModal } from "./AddStudentModal";
 import { ConsultModal } from "./ConsultModal";
+import { AttendanceModal } from "./AttendanceModal";
+import { AttendancePanel } from "./AttendanceGrid";
 import { COLUMNS, DEFAULT_VISIBLE, getPath, type ColumnDef } from "./columns";
 import { useUrlState } from "../hooks";
 import { filterStudents, paginate, sortStudents } from "../lib/studentFilter";
@@ -71,7 +73,26 @@ export function StudentsTable({
   const columnsRef = useRef<HTMLDivElement>(null);
   const [adding, setAdding] = useState(false);
   const [consultFor, setConsultFor] = useState<Student | null>(null);
+  const [attendanceFor, setAttendanceFor] = useState<Student | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
   const qc = useQueryClient();
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setViewportWidth(el.clientWidth));
+    ro.observe(el);
+    setViewportWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  // 페이지/정렬이 바뀌면 펼쳐진 출결 행이 다른 학생을 가리키지 않도록 닫는다.
+  useEffect(() => {
+    setExpandedId(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.page, state.limit, state.sort, state.dir]);
 
   useEffect(() => {
     if (!showColumns) return;
@@ -295,7 +316,7 @@ export function StudentsTable({
       </div>
 
       {/* ---------------------------------------------------------- table */}
-      <div className="card mt-3 min-h-[280px] overflow-x-auto">
+      <div ref={scrollRef} className="card mt-3 min-h-[280px] overflow-x-auto">
         {error ? (
           <p className="p-8 text-center text-sm text-critical">{t("students:table.loadError")}</p>
         ) : (
@@ -355,8 +376,8 @@ export function StudentsTable({
               )}
 
               {rows.map((student) => (
+                <Fragment key={student._id}>
                 <tr
-                  key={student._id}
                   className="border-b border-line bg-surface last:border-0 hover:bg-[#fafbfd]"
                 >
                   {cols.map((col, i) => (
@@ -422,6 +443,27 @@ export function StudentsTable({
                     </td>
                   )}
                 </tr>
+
+                {expandedId === student._id && (
+                  <tr className="border-b border-line bg-plane">
+                    <td colSpan={cols.length + (canWrite ? 1 : 0)} className="p-0">
+                      {/* 가로 스크롤과 무관하게 항상 보이도록 스크롤러 폭에 고정한다
+                          — .sticky-col 이 열에 쓰는 것과 같은 원리다. */}
+                      <div
+                        className="sticky left-0 z-0 px-3 py-3"
+                        style={{ width: viewportWidth || undefined }}
+                      >
+                        <AttendancePanel
+                          student={student}
+                          readOnly={!canWrite}
+                          onToast={onToast}
+                          onOpenFull={() => setAttendanceFor(student)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -478,6 +520,15 @@ export function StudentsTable({
         <ConsultModal
           student={consultFor}
           onClose={() => setConsultFor(null)}
+          onToast={onToast}
+          readOnly={!canWrite}
+        />
+      )}
+
+      {attendanceFor && (
+        <AttendanceModal
+          student={attendanceFor}
+          onClose={() => setAttendanceFor(null)}
           onToast={onToast}
           readOnly={!canWrite}
         />
@@ -541,10 +592,38 @@ export function StudentsTable({
           </button>
         );
 
+      case "attendance": {
+        // 대면·온라인은 담당 교수가 다른 별개 과목이라 합계가 아니라 각각 보여 준다.
+        // 결석/지각 숫자는 이제 주차별 출결에서 계산되는 파생값이라 직접 수정할
+        // 수 없다 — 클릭하면 행 아래에 편집 가능한 그리드가 펼쳐진다.
+        const isAbsences = col.key === "absences";
+        const offline = Number(
+          getPath(student, isAbsences ? "attendance.absencesOffline" : "attendance.lateOffline") ?? 0
+        );
+        const online = Number(
+          getPath(student, isAbsences ? "attendance.absencesOnline" : "attendance.lateOnline") ?? 0
+        );
+        const risk = Number(getPath(student, "attendance.riskAbsences") ?? 0);
+        const expanded = expandedId === student._id;
+        return (
+          <button
+            type="button"
+            title={t("students:table.attendanceExpand")}
+            aria-expanded={expanded}
+            onClick={() => setExpandedId(expanded ? null : student._id)}
+            className={`nums -mx-1 flex w-full items-center justify-end gap-0.5 rounded px-1 py-0.5 text-right hover:bg-[#eef3fa]
+              ${isAbsences ? absenceTone(risk) : ""} ${expanded ? "bg-[#eef3fa]" : ""}`}
+          >
+            {offline}·{online}
+            <span className="text-[9px] text-muted">{expanded ? "▴" : "▾"}</span>
+          </button>
+        );
+      }
+
       case "number": {
         const raw = Number(getPath(student, col.field) ?? 0);
         return (
-          <span className={`nums block ${col.key === "absences" ? absenceTone(raw) : ""}`}>
+          <span className="nums block">
             <EditableCell
               value={raw}
               kind="number"

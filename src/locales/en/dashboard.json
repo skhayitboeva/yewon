@@ -27,7 +27,15 @@
   },
   "attendance": {
     "status": "Attendance Status",
-    "urgentNote": "4+ absences need immediate consultation"
+    "urgentNote": "4+ absences need immediate consultation",
+    "mode": {
+      "all": "All (F risk)",
+      "offline": "Offline",
+      "online": "Online",
+      "allSubtitle": "By the higher of offline/online (F risk)",
+      "offlineSubtitle": "By offline-class absences",
+      "onlineSubtitle": "By online-class absences"
+    }
   },
   "consult": {
     "recent": "Recent Consultations",

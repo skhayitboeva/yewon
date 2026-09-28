@@ -21,10 +21,14 @@
     "phone": "전화번호",
     "email": "이메일",
     "tuition": "등록금",
+    "late": "지각",
     "absences": "결석",
+    "absencesOffline": "결석(대면)",
+    "absencesOnline": "결석(온라인)",
     "contactCount": "연락횟수",
     "memo": "메모",
-    "consult": "상담"
+    "consult": "상담",
+    "attendance": "출결"
   },
   "toolbar": {
     "addStudent": "학생 추가",
@@ -45,6 +49,8 @@
     "confirmDelete": "{{name}}({{studentId}}) 학생을 삭제됩니다. 계속할까요?",
     "createdToast": "학생을 추가했습니다.",
     "deletedToast": "학생을 삭제했습니다.",
-    "resetPasswordToast": "비밀번호를 초기화했습니다."
+    "resetPasswordToast": "비밀번호를 초기화했습니다.",
+    "attendanceExpand": "주차별 출결 보기",
+    "attendanceCollapse": "닫기"
   }
 }

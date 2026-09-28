@@ -1,11 +1,15 @@
 import type {
   AccessRequest,
+  AttendanceMode,
+  AttendanceMark,
+  AttendanceTotals,
   Consultation,
   Info,
   Role,
   Settings,
   Stats,
   Student,
+  WeeklyAttendance,
 } from "../shared/domain";
 import { tError } from "./i18n";
 
@@ -55,7 +59,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  try {
+    return (await res.json()) as T;
+  } catch {
+    // A 200 with a non-JSON body means the route didn't actually match — most
+    // likely netlify.toml's SPA fallback (`/* -> /index.html`) returning the
+    // app shell for a typo'd or not-yet-registered /api/* path. Surface that
+    // as a normal API error instead of an opaque "Unexpected token '<'".
+    throw new ApiError(res.status, tError("요청이 실패했습니다", { status: res.status }));
+  }
 }
 
 export interface StudentPage {
@@ -64,6 +76,11 @@ export interface StudentPage {
   page: number;
   limit: number;
   pages: number;
+}
+
+export interface AttendanceRecordResponse {
+  record: WeeklyAttendance & { updatedAt: string | null; updatedBy: string | null };
+  totals: AttendanceTotals;
 }
 
 export const api = {
@@ -115,6 +132,17 @@ export const api = {
     request<{ ok: true }>(`/api/students/${id}`, { method: "DELETE" }),
   resetStudentPassword: (id: string) =>
     request<{ ok: true }>(`/api/students/${id}/reset-password`, { method: "POST" }),
+
+  studentAttendance: (id: string) =>
+    request<AttendanceRecordResponse>(`/api/students/${id}/attendance`),
+  patchStudentAttendance: (
+    id: string,
+    marks: { week: number; mode: AttendanceMode; value: AttendanceMark }[]
+  ) =>
+    request<AttendanceRecordResponse>(`/api/students/${id}/attendance`, {
+      method: "PATCH",
+      body: JSON.stringify({ marks }),
+    }),
 
   consultations: (studentId: string) =>
     request<{ rows: Consultation[] }>(

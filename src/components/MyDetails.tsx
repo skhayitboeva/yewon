@@ -91,7 +91,24 @@ export function MyDetails({
       </Section>
 
       <Section title={t("students:columns.absences")}>
-        <Field label={t("students:columns.absences")} value={s.attendance?.absences ?? 0} />
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label={t("modals:attendance.offline")}
+            value={t("modals:attendance.totalsByMode", {
+              mode: t("modals:attendance.offline"),
+              absences: s.attendance?.absencesOffline ?? 0,
+              late: s.attendance?.lateOffline ?? 0,
+            })}
+          />
+          <Field
+            label={t("modals:attendance.online")}
+            value={t("modals:attendance.totalsByMode", {
+              mode: t("modals:attendance.online"),
+              absences: s.attendance?.absencesOnline ?? 0,
+              late: s.attendance?.lateOnline ?? 0,
+            })}
+          />
+        </div>
         {s.attendance?.note && (
           <p className="mt-2 whitespace-pre-wrap text-sm text-ink2">{s.attendance.note}</p>
         )}
