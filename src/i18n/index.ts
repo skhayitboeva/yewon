@@ -5,6 +5,7 @@ import commonKo from "../locales/ko/common.json";
 import loginKo from "../locales/ko/login.json";
 import dashboardKo from "../locales/ko/dashboard.json";
 import studentsKo from "../locales/ko/students.json";
+import timetableKo from "../locales/ko/timetable.json";
 import filtersKo from "../locales/ko/filters.json";
 import modalsKo from "../locales/ko/modals.json";
 import profileKo from "../locales/ko/profile.json";
@@ -17,6 +18,7 @@ import commonEn from "../locales/en/common.json";
 import loginEn from "../locales/en/login.json";
 import dashboardEn from "../locales/en/dashboard.json";
 import studentsEn from "../locales/en/students.json";
+import timetableEn from "../locales/en/timetable.json";
 import filtersEn from "../locales/en/filters.json";
 import modalsEn from "../locales/en/modals.json";
 import profileEn from "../locales/en/profile.json";
@@ -29,6 +31,7 @@ import commonUz from "../locales/uz/common.json";
 import loginUz from "../locales/uz/login.json";
 import dashboardUz from "../locales/uz/dashboard.json";
 import studentsUz from "../locales/uz/students.json";
+import timetableUz from "../locales/uz/timetable.json";
 import filtersUz from "../locales/uz/filters.json";
 import modalsUz from "../locales/uz/modals.json";
 import profileUz from "../locales/uz/profile.json";
@@ -45,6 +48,7 @@ export const NAMESPACES = [
   "login",
   "dashboard",
   "students",
+  "timetable",
   "filters",
   "modals",
   "profile",
@@ -72,6 +76,7 @@ void i18next.use(initReactI18next).init({
       login: loginKo,
       dashboard: dashboardKo,
       students: studentsKo,
+      timetable: timetableKo,
       filters: filtersKo,
       modals: modalsKo,
       profile: profileKo,
@@ -85,6 +90,7 @@ void i18next.use(initReactI18next).init({
       login: loginEn,
       dashboard: dashboardEn,
       students: studentsEn,
+      timetable: timetableEn,
       filters: filtersEn,
       modals: modalsEn,
       profile: profileEn,
@@ -98,6 +104,7 @@ void i18next.use(initReactI18next).init({
       login: loginUz,
       dashboard: dashboardUz,
       students: studentsUz,
+      timetable: timetableUz,
       filters: filtersUz,
       modals: modalsUz,
       profile: profileUz,

@@ -14,6 +14,20 @@ export const GENDERS = ["남", "여"] as const;
  * student record is never actually removed from the database. */
 export const ENROLL_STATUSES = ["재학", "휴학", "복학", "제적", "졸업", "자퇴", "삭제"] as const;
 export const ADMISSION_TYPES = ["신입학", "편입학", "재입학"] as const;
+
+/** 대시보드 통계와 "전체 학생" 탭이 세는 학적. 복학은 바로 수업을 듣고 등록금도
+ * 내므로 재학과 같이 센다. 나머지(휴학/제적/졸업/자퇴/삭제/빈 값)는 "기타" 탭으로
+ * 간다 — 두 탭을 합치면 언제나 전체가 된다. 기준이 바뀌면 이 배열만 고치면 된다. */
+export const ENROLLED_STATUSES = ["재학", "복학"] as const;
+
+/** 학생 목록의 두 갈래 — 서버 쿼리(query.mts)와 클라이언트 필터(studentFilter.ts)가
+ * 같은 값을 쓴다. */
+export type StudentScope = "enrolled" | "others";
+
+export function isEnrolled(enrollStatus: string | undefined | null): boolean {
+  return (ENROLLED_STATUSES as readonly string[]).includes(enrollStatus ?? "");
+}
+
 export const COURSES = ["", "석사과정", "박사과정"] as const;
 
 export const TUITION_STATUSES = ["완납", "부분납부", "미납"] as const;
@@ -38,7 +52,8 @@ export const CONSULT_METHODS = ["대면", "전화", "카카오톡", "이메일",
 export const ABSENCE_BUCKETS = [
   { key: "good", label: "양호 (0회)", min: 0, max: 0 },
   { key: "a1", label: "결석 1회", min: 1, max: 1 },
-  { key: "a23", label: "결석 2–3회", min: 2, max: 3 },
+  { key: "a2", label: "결석 2회", min: 2, max: 2 },
+  { key: "a3", label: "결석 3회", min: 3, max: 3 },
   { key: "a4", label: "결석 4회 이상 (한 과목 기준, F 대상)", min: 4, max: null },
 ] as const;
 export type AbsenceBucketKey = (typeof ABSENCE_BUCKETS)[number]["key"];
@@ -176,6 +191,52 @@ export function totalsToAttendanceFields(t: AttendanceTotals): Omit<Attendance, 
   };
 }
 
+/* ------------------------------------------------------------------- 반 배정 */
+
+/** 반이 열리는 요일 — 시간표 정렬 순서이기도 하다. 대학원 출석명부에는 요일이
+ * 없어서 day 가 "" 인 반이 있다. */
+export const CLASS_DAYS = ["월", "화", "수", "목", "금"] as const;
+export type ClassDay = (typeof CLASS_DAYS)[number];
+
+/** 학사에서 받은 반배정·출석명부 한 장 = 반 하나. 수업 시각은 두 명부 어디에도
+ * 없어서 요일 + 강의실까지만 담는다. */
+export interface ClassGroup {
+  _id: string;
+  year: number;
+  semester: 1 | 2;
+  level: Level;
+  name: string;
+  /** 학부는 시트 이름에서 얻는다. 대학원 명부에는 요일이 없어 "". */
+  day: ClassDay | "";
+  room: string;
+  /** 대학원만 — 엔터테인먼트경영 / 문화예술관광. */
+  program: string;
+  /** 영어트랙1반 · 편입 같은 시트 이름 접미사. */
+  track: string;
+  note: string;
+  instructors: string[];
+  /** 명부에 실린 전체 인원(타 국적 포함). 우리 학생 수는 따로 센다. */
+  rosterCount: number;
+  studentIds: string[];
+  source: string;
+  sheet: string;
+  updatedAt?: string;
+}
+
+/** 우리가 가진 학생만 붙여서 돌려주는 모양 — /api/classes 의 응답. */
+export interface ClassGroupWithStudents extends Omit<ClassGroup, "studentIds"> {
+  students: {
+    studentId: string;
+    nameKo: string;
+    nameEn: string;
+    level: string;
+    studentType: string;
+    enrollStatus: string;
+    mobile: string;
+  }[];
+  ourCount: number;
+}
+
 export interface Student {
   _id: string;
   studentId: string;
@@ -277,7 +338,10 @@ export const EMPTY_INFO: Info = {
 };
 
 export interface Stats {
+  /** 재학 중(ENROLLED_STATUSES)인 학생 수 — 아래 모든 통계의 모집단. */
   total: number;
+  /** 그 밖의 학생 수(휴학·제적·졸업·자퇴·삭제·빈 값). 대시보드의 "기타" 카드 전용. */
+  others: number;
   byLevelType: { level: string; studentType: string; count: number }[];
   tuitionStatus: Record<string, number>;
   terms: { term1: number; term2: number; term3: number; term4: number };

@@ -2,6 +2,7 @@
   "sections": {
     "allStudents": "전체 학생",
     "allStudentsNote": "카드를 누르면 해당 조건으로 학생 목록이 열립니다",
+    "enrolledNote": "재학·복학 학생 기준",
     "tuition": "등록금",
     "attendance": "출결",
     "consultations": "상담",
@@ -13,6 +14,8 @@
     "undergradNew": "학부 · 신입생 ({{semester}})",
     "gradContinuing": "대학원 · 재학생",
     "gradNew": "대학원 · 신입생 ({{semester}})",
+    "othersLabel": "기타 학적",
+    "othersSub": "재학·복학 외",
     "semesterLabel": "{{year}}-{{term}}학기"
   },
   "tuition": {

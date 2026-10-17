@@ -5,6 +5,7 @@ import { Login } from "./components/Login";
 import { getInitData, isTelegram, prepareTelegramViewport } from "./telegram";
 import { Dashboard, type DrillFilter } from "./components/Dashboard";
 import { StudentsTable } from "./components/StudentsTable";
+import { Timetable } from "./components/Timetable";
 import { Info } from "./components/Info";
 import { MyDetails } from "./components/MyDetails";
 import { Profile } from "./components/Profile";
@@ -13,19 +14,30 @@ import { Toasts } from "./components/Toast";
 import { useToasts } from "./hooks";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
-import type { Role } from "../shared/domain";
+import type { Role, StudentScope } from "../shared/domain";
 
-type Tab = "dashboard" | "students" | "details" | "profile" | "info" | "notifications";
+type Tab =
+  | "dashboard"
+  | "students"
+  | "timetable"
+  | "details"
+  | "profile"
+  | "info"
+  | "notifications";
 
 const TABS_BY_ROLE: Record<Role, { tabs: Tab[]; default: Tab }> = {
-  admin: { tabs: ["dashboard", "students", "info", "notifications", "profile"], default: "dashboard" },
-  manager: { tabs: ["dashboard", "students", "info", "profile"], default: "dashboard" },
+  admin: {
+    tabs: ["dashboard", "students", "timetable", "info", "notifications", "profile"],
+    default: "dashboard",
+  },
+  manager: { tabs: ["dashboard", "students", "timetable", "info", "profile"], default: "dashboard" },
   user: { tabs: ["details", "profile", "info"], default: "details" },
 };
 
 const TAB_KEYS: Record<Tab, string> = {
   dashboard: "tabs.dashboard",
   students: "tabs.students",
+  timetable: "tabs.timetable",
   details: "tabs.details",
   profile: "tabs.profile",
   info: "tabs.info",
@@ -37,6 +49,9 @@ export default function App() {
   const [role, setRole] = useState<Role | null>(null);
   const [tab, setTab] = useState<Tab>("dashboard");
   const [drill, setDrill] = useState<DrillFilter | undefined>(undefined);
+  // 어느 모집단을 보여 줄지 — 대시보드의 "기타" 카드만 "others" 로 바꾼다.
+  // 필터가 아니라 보고 있는 명부 자체라서 URL 필터 상태에 넣지 않는다.
+  const [scope, setScope] = useState<StudentScope>("enrolled");
   const [tableKey, setTableKey] = useState(0);
   const { toasts, push, dismiss } = useToasts();
   const qc = useQueryClient();
@@ -102,13 +117,16 @@ export default function App() {
     roleTabs && roleTabs.tabs.includes(tab) ? tab : (roleTabs?.default ?? "dashboard");
 
   function openStudents(filter: DrillFilter) {
-    const params = new URLSearchParams(filter as Record<string, string>);
+    // scope 는 필터가 아니라 모집단이므로 URL 필터에서 떼어 낸다.
+    const { scope: nextScope, ...rest } = filter;
+    setScope(nextScope === "others" ? "others" : "enrolled");
+    const params = new URLSearchParams(rest as Record<string, string>);
     window.history.replaceState(
       null,
       "",
       params.toString() ? `${window.location.pathname}?${params}` : window.location.pathname
     );
-    setDrill(filter);
+    setDrill(rest);
     setTableKey((k) => k + 1); // remount so the table picks up the new URL state
     setTab("students");
   }
@@ -153,7 +171,16 @@ export default function App() {
       <nav className="sticky top-0 z-20 border-b border-line bg-surface px-4 py-2 sm:px-6">
         <div className="mx-auto flex max-w-[1500px] gap-1.5">
           {roleTabs?.tabs.map((tb) => (
-            <button key={tb} className={tabClass(tb)} onClick={() => setTab(tb)}>
+            <button
+              key={tb}
+              className={tabClass(tb)}
+              onClick={() => {
+                // 탭을 직접 누르면 항상 재학생 명부로 돌아온다 — "전체 학생" 이
+                // 어떤 때는 기타 명부를 뜻하는 일이 없도록.
+                if (tb === "students") setScope("enrolled");
+                setTab(tb);
+              }}
+            >
               {t(TAB_KEYS[tb])}
             </button>
           ))}
@@ -163,8 +190,15 @@ export default function App() {
       <main>
         {effectiveTab === "dashboard" && <Dashboard onDrill={openStudents} />}
         {effectiveTab === "students" && (
-          <StudentsTable key={tableKey} onToast={push} initialFilter={drill} role={role!} />
+          <StudentsTable
+            key={`${scope}-${tableKey}`}
+            onToast={push}
+            initialFilter={drill}
+            role={role!}
+            scope={scope}
+          />
         )}
+        {effectiveTab === "timetable" && <Timetable onDrill={openStudents} />}
         {effectiveTab === "details" && <MyDetails onToast={push} />}
         {effectiveTab === "profile" && <Profile role={role!} onToast={push} />}
         {effectiveTab === "info" && <Info role={role} onToast={push} />}

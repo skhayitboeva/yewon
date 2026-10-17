@@ -33,6 +33,7 @@
   "tabs": {
     "dashboard": "대시보드",
     "students": "전체 학생",
+    "timetable": "시간표",
     "details": "내 정보",
     "profile": "프로필",
     "info": "안내",

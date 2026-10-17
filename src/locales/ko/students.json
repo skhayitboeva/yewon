@@ -32,6 +32,7 @@
   },
   "toolbar": {
     "addStudent": "학생 추가",
+    "othersScope": "기타 학적 명부 (재학·복학 외)",
     "columnsButton": "열 표시",
     "perPage": "페이지당",
     "resetToDefault": "기본값",

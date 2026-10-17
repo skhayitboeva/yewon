@@ -1,58 +1,65 @@
 #!/usr/bin/env node
 /**
- * 엑셀(.xlsx) → MongoDB 이관.
+ * Excel (.xlsx) -> MongoDB migration for the 학사시스템 export.
  *
- *   node scripts/import-excel.mjs data/students.xlsx --dry-run
- *   node scripts/import-excel.mjs data/students.xlsx --mode=upsert
- *   node scripts/import-excel.mjs data/students.xlsx --mode=replace
+ *   node scripts/import-excel.mjs "students.xlsx" --dry-run
+ *   node scripts/import-excel.mjs "students.xlsx" --mode=upsert
+ *   node scripts/import-excel.mjs "students.xlsx" --mode=replace
  *
- * 기본은 --dry-run: 무엇이 바뀔지 리포트만 내고 아무것도 쓰지 않는다.
- * upsert 모드는 학적 정보만 갱신하고 등록금·출결·연락횟수·메모는 보존한다.
+ * Defaults to --dry-run: reports what would change and writes nothing.
+ * upsert only refreshes academic fields; tuition / attendance / contactCount /
+ * memo are entered in the app and are never touched here.
+ *
+ * Only rows matching BOTH --nationality and --campus are imported; the export
+ * contains every campus and nationality.
  */
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { MongoClient } from "mongodb";
 import * as XLSX from "xlsx";
 
-/* ------------------------------------------------------------- 컬럼 매핑 */
-/** 엑셀 헤더(왼쪽) → DB 필드(오른쪽). 실제 파일을 보고 필요한 만큼 추가하세요. */
+/* ------------------------------------------------------------------ config */
+const DEFAULTS = {
+  nationality: "우즈베키스탄",
+  campus: "경기드림캠퍼스",
+  newDate: "2026-08-31",
+  level: "학부",
+};
+
+/** Excel header -> DB field. Headers are `category|field`; `\r\n` inside a
+ * header is stripped before lookup, so write keys without line breaks. */
 const HEADER_MAP = {
   학번: "studentId",
   성명: "nameKo",
-  이름: "nameKo",
   "성명(영문)": "nameEn",
-  영문성명: "nameEn",
-  영문이름: "nameEn",
   생년월일: "birthDate",
   성별: "gender",
   학년: "grade",
   학기차: "semesterNo",
   학적: "enrollStatus",
-  전공: "major",
   학부: "faculty",
   대학원: "gradSchool",
+  전공: "major",
   과정: "course",
-  입학일자: "admissionDate",
-  입학구분: "admissionType",
-  국적: "nationality",
-  주소: "address",
-  주소1: "address1",
-  주소2: "address2",
-  전화번호: "phone",
-  휴대전화: "mobile",
-  연락처: "mobile",
-  이메일: "email",
-  최근등록년도: "lastRegYear",
-  최근등록학기: "lastRegSemester",
-  구분: "level",
-  "신입/재학": "studentType",
-  신입재학: "studentType",
+  "입학정보|입학일자": "admissionDate",
+  "입학정보|입학구분": "admissionType",
+  "학생주소|국적": "nationality",
+  "학생주소|주소1": "address1",
+  "학생주소|주소2": "address2",
+  "학생주소|전화번호": "tel1",
+  "학생주소|휴대전화": "tel2",
+  "학생주소|긴급연락처": "tel3",
+  "학생주소|Email": "email",
+  "최종등록|년도": "lastRegYear",
+  "최종등록|학기": "lastRegSemester",
 };
 
-/** 엑셀에서 가져오는 필드 = 학적 정보. 등록금/출결/연락횟수/메모는 앱에서만 입력. */
+/** Columns read for the filter but never written as-is. */
+const FILTER_ONLY = new Set(["본분교", "입학정보|외국인여부"]);
+
+/** Fields that come from Excel. tuition/attendance/contactCount/memo never do. */
 const ACADEMIC_FIELDS = [
   "level",
-  "studentType",
   "nameKo",
   "nameEn",
   "birthDate",
@@ -75,29 +82,48 @@ const ACADEMIC_FIELDS = [
   "lastRegSemester",
 ];
 
-/* ---------------------------------------------------------------- helpers */
+/* ----------------------------------------------------------------- helpers */
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith("--"));
-const modeArg = args.find((a) => a.startsWith("--mode="));
-const mode = modeArg ? modeArg.split("=")[1] : "upsert";
+const flag = (name, fallback) => {
+  const hit = args.find((a) => a.startsWith(`--${name}=`));
+  return hit ? hit.slice(name.length + 3) : fallback;
+};
+
+const mode = flag("mode", "upsert");
 const dryRun = args.includes("--dry-run") || !args.some((a) => a.startsWith("--mode="));
+const nationality = flag("nationality", DEFAULTS.nationality);
+const campus = flag("campus", DEFAULTS.campus);
+const newDate = flag("new-date", DEFAULTS.newDate);
+const level = flag("level", DEFAULTS.level);
+/** Graduate export only — 근로자트랙 students are managed by another team. Empty
+ * by default so the undergraduate file, which has no such column, is unaffected. */
+const excludeTrack = flag("exclude-track", "");
 
 if (!file) {
-  console.error("사용법: node scripts/import-excel.mjs <파일.xlsx> [--dry-run|--mode=upsert|--mode=replace|--mode=insert-only]");
+  console.error(
+    "Usage: node scripts/import-excel.mjs <file.xlsx> [--dry-run|--mode=upsert|--mode=replace|--mode=insert-only]\n" +
+      "       [--nationality=우즈베키스탄] [--campus=경기드림캠퍼스] [--new-date=2026-08-31]\n" +
+      "       [--level=학부] [--exclude-track=근로자트랙]"
+  );
   process.exit(1);
 }
 if (!["upsert", "replace", "insert-only"].includes(mode)) {
-  console.error(`알 수 없는 모드: ${mode}`);
+  console.error(`Unknown mode: ${mode}`);
   process.exit(1);
 }
 
+/** Header text as written in the sheet -> lookup key. */
+const normHeader = (h) => String(h).replace(/[\r\n]+/g, "").trim();
+
+/** The export uses "0", "-" and "N/A" as empty markers. */
 const clean = (v) => {
   if (v == null) return "";
   const s = String(v).trim();
   return s === "0" || s === "-" || s.toUpperCase() === "N/A" ? "" : s;
 };
 
-/** 엑셀 날짜(숫자 시리얼 또는 문자열) → "YYYY-MM-DD". */
+/** Excel date (serial number or text) -> "YYYY-MM-DD". */
 function toDate(value) {
   if (value == null || value === "") return "";
   if (typeof value === "number") {
@@ -111,77 +137,146 @@ function toDate(value) {
   return s;
 }
 
-/* ------------------------------------------------------------------- 읽기 */
+/** Digits only; anything too short to be a real number becomes "". */
+function toPhone(value) {
+  const d = clean(value).replace(/\D/g, "");
+  return d.length >= 9 && d.length <= 11 ? d : "";
+}
+
+/* -------------------------------------------------------------------- read */
 const wb = XLSX.read(readFileSync(file), { cellDates: false });
 const sheetName = wb.SheetNames[0];
 const rowsRaw = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: "", raw: true });
 
-console.log(`\n파일: ${basename(file)}  시트: ${sheetName}  행: ${rowsRaw.length}`);
+console.log(`\nFile   ${basename(file)}`);
+console.log(`Sheet  ${sheetName}`);
+console.log(`Rows   ${rowsRaw.length}`);
+console.log(`Filter ${nationality} + ${campus}   |   신입생 if 입학일자 = ${newDate}   |   level ${level}`);
+if (excludeTrack) console.log(`       excluding 외국인여부 = ${excludeTrack}`);
 
 const headers = Object.keys(rowsRaw[0] || {});
-const mapped = headers.filter((h) => HEADER_MAP[h.trim()]);
-const unmapped = headers.filter((h) => !HEADER_MAP[h.trim()]);
+const mapped = headers.filter((h) => HEADER_MAP[normHeader(h)]);
+const unmapped = headers.filter(
+  (h) => !HEADER_MAP[normHeader(h)] && !FILTER_ONLY.has(normHeader(h))
+);
 
-console.log("\n── 컬럼 매핑 ─────────────────────────────");
-for (const h of mapped) console.log(`  ✓ ${h.padEnd(16)} → ${HEADER_MAP[h.trim()]}`);
-for (const h of unmapped) console.log(`  · ${h.padEnd(16)}   (무시됨)`);
-if (unmapped.length) {
-  console.log("\n  무시된 컬럼이 필요하면 scripts/import-excel.mjs 의 HEADER_MAP 에 추가하세요.");
-}
+console.log("\n-- Column mapping ------------------------");
+for (const h of mapped) console.log(`  ok  ${normHeader(h).padEnd(20)} -> ${HEADER_MAP[normHeader(h)]}`);
+for (const h of FILTER_ONLY) console.log(`  ok  ${h.padEnd(20)} -> (filter only)`);
+console.log(`  ${unmapped.length} column(s) ignored: ${unmapped.map(normHeader).join(", ") || "none"}`);
 
-/* ------------------------------------------------------------------ 변환 */
+/* ---------------------------------------------------------------- transform */
 const problems = [];
 const seen = new Map();
 const docs = [];
+let skippedFilter = 0;
+let skippedTrack = 0;
 
 rowsRaw.forEach((row, i) => {
-  const lineNo = i + 2; // 헤더가 1행
+  const lineNo = i + 2; // header is row 1
+
+  const get = (header) => {
+    for (const [k, v] of Object.entries(row)) if (normHeader(k) === header) return v;
+    return "";
+  };
+
+  if (clean(get("학생주소|국적")) !== nationality || clean(get("본분교")) !== campus) {
+    skippedFilter++;
+    return;
+  }
+  if (excludeTrack && clean(get("입학정보|외국인여부")) === excludeTrack) {
+    skippedTrack++;
+    return;
+  }
+
   const out = {};
   for (const [header, value] of Object.entries(row)) {
-    const field = HEADER_MAP[header.trim()];
+    const field = HEADER_MAP[normHeader(header)];
     if (!field) continue;
-    out[field] = field === "birthDate" || field === "admissionDate" ? toDate(value) : clean(value);
+    out[field] =
+      field === "birthDate" || field === "admissionDate" ? toDate(value) : clean(value);
   }
 
-  if (out.address1 || out.address2) {
-    out.address = [out.address1, out.address2].filter(Boolean).join(" ").trim();
-    delete out.address1;
-    delete out.address2;
-  }
+  out.address = [out.address1, out.address2].filter(Boolean).join(" ").trim();
+  delete out.address1;
+  delete out.address2;
+
+  // 학사시스템 spreads contact numbers across three columns and fills them
+  // inconsistently — keep every distinct number in `phone`, and use the first
+  // real 010 number as `mobile`, which is what student login matches on.
+  const numbers = [out.tel2, out.tel1, out.tel3].map(toPhone).filter(Boolean);
+  const unique = [...new Set(numbers)];
+  out.phone = unique.join("/");
+  out.mobile = unique.find((n) => n.length === 11 && n.startsWith("010")) || "";
+  delete out.tel1;
+  delete out.tel2;
+  delete out.tel3;
 
   if (!out.studentId) {
-    problems.push(`${lineNo}행: 학번 없음 — 건너뜀`);
+    problems.push(`row ${lineNo}: no 학번 — skipped`);
     return;
   }
   if (seen.has(out.studentId)) {
-    problems.push(`${lineNo}행: 학번 ${out.studentId} 중복 (${seen.get(out.studentId)}행과 같음)`);
+    problems.push(`row ${lineNo}: 학번 ${out.studentId} duplicates row ${seen.get(out.studentId)}`);
     return;
   }
   seen.set(out.studentId, lineNo);
 
-  if (!out.nameKo) problems.push(`${lineNo}행: 성명 없음 (${out.studentId})`);
-  if (out.level && !["학부", "대학원"].includes(out.level)) {
-    problems.push(`${lineNo}행: 구분 값이 "${out.level}" — 학부/대학원이 아님`);
-  }
-  if (!out.level) out.level = out.gradSchool ? "대학원" : "학부";
-  if (!out.studentType) out.studentType = "재학생";
-  if (!out.enrollStatus) out.enrollStatus = "재학";
-  if (!out.nationality) out.nationality = "우즈베키스탄";
+  if (!out.nameKo) problems.push(`row ${lineNo}: no 성명 (${out.studentId})`);
   for (const f of ["birthDate", "admissionDate"]) {
     if (out[f] && !/^\d{4}-\d{2}-\d{2}$/.test(out[f])) {
-      problems.push(`${lineNo}행: ${f} 형식 오류 "${out[f]}"`);
+      problems.push(`row ${lineNo}: bad ${f} "${out[f]}"`);
       out[f] = "";
     }
   }
 
+  out.level = level;
+  out.studentType = out.admissionDate === newDate ? "신입생" : "재학생";
+  if (!out.enrollStatus) out.enrollStatus = "재학";
+  if (!out.nationality) out.nationality = nationality;
+
   docs.push(out);
 });
 
-/* --------------------------------------------------------------- 리포트 */
+/* ------------------------------------------------------------------ report */
+const newStudents = docs.filter((d) => d.studentType === "신입생").length;
+const withMobile = docs.filter((d) => d.mobile).length;
+
+const byNumber = new Map();
+for (const d of docs) {
+  if (!d.mobile) continue;
+  byNumber.set(d.mobile, [...(byNumber.get(d.mobile) || []), d.studentId]);
+}
+const shared = [...byNumber.entries()].filter(([, ids]) => ids.length > 1);
+
+console.log("\n-- Selection -----------------------------");
+console.log(`  matched filter      ${docs.length}`);
+console.log(`  excluded by filter  ${skippedFilter}`);
+if (excludeTrack) console.log(`  excluded ${excludeTrack}   ${skippedTrack}`);
+console.log(`  신입생 (${newDate})  ${newStudents}`);
+console.log(`  재학생              ${docs.length - newStudents}`);
+console.log(`  with mobile         ${withMobile}   (cannot log in: ${docs.length - withMobile})`);
+
+if (shared.length) {
+  console.log(`\n  ! ${shared.length} number(s) shared by more than one student.`);
+  console.log("    Student login matches the first record found, so these students");
+  console.log("    could reach each other's data until staff correct the numbers.");
+  for (const [num, ids] of shared) {
+    console.log(`      ${num.slice(0, 3)}****${num.slice(-4)}  ${ids.join(", ")}`);
+  }
+}
+
+if (problems.length) {
+  console.log(`\n  ! ${problems.length} issue(s) to check`);
+  for (const p of problems.slice(0, 40)) console.log(`      ${p}`);
+  if (problems.length > 40) console.log(`      ... and ${problems.length - 40} more`);
+}
+
+/* --------------------------------------------------------------- connect */
 const URI = process.env.MONGODB_URI;
 const DB = process.env.MONGODB_DB || "yewon_sms";
 if (!URI) {
-  console.error("\nMONGODB_URI 환경변수를 설정하세요.");
+  console.error("\nSet MONGODB_URI first:  set -a && source .env && set +a");
   process.exit(1);
 }
 
@@ -194,43 +289,42 @@ const ids = docs.map((d) => d.studentId);
 const existing = await students.distinct("studentId", { studentId: { $in: ids } });
 const existingSet = new Set(existing);
 
-console.log("\n── 검증 결과 ─────────────────────────────");
-console.log(`  유효한 행        ${docs.length}`);
-console.log(`  이미 있는 학번   ${existing.length}`);
-console.log(`  새로 추가될 학번 ${docs.length - existing.length}`);
-console.log(`  현재 DB 학생 수  ${await students.countDocuments({})}`);
-if (problems.length) {
-  console.log(`\n  ⚠ 확인 필요 ${problems.length}건`);
-  for (const p of problems.slice(0, 40)) console.log(`    - ${p}`);
-  if (problems.length > 40) console.log(`    … 외 ${problems.length - 40}건`);
-}
+console.log("\n-- Database ------------------------------");
+console.log(`  already present     ${existing.length}`);
+console.log(`  to be inserted      ${docs.length - existing.length}`);
+console.log(`  students now in DB  ${await students.countDocuments({})}`);
 
 if (dryRun) {
-  console.log("\n[dry-run] 아무것도 저장하지 않았습니다.");
-  console.log("실제 이관: node scripts/import-excel.mjs " + file + " --mode=upsert\n");
+  console.log("\n[dry-run] Nothing was written.");
+  const flags = [
+    `--level=${level}`,
+    ...(excludeTrack ? [`--exclude-track=${excludeTrack}`] : []),
+    ...(nationality === DEFAULTS.nationality ? [] : [`--nationality=${nationality}`]),
+    ...(campus === DEFAULTS.campus ? [] : [`--campus=${campus}`]),
+    ...(newDate === DEFAULTS.newDate ? [] : [`--new-date=${newDate}`]),
+  ].join(" ");
+  console.log(`To import:  node scripts/import-excel.mjs "${file}" ${flags} --mode=upsert\n`);
   await client.close();
   process.exit(0);
 }
 
-/* ---------------------------------------------------------------- 백업 */
+/* ---------------------------------------------------------------- backup */
 const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-const backupName = `students_backup_${stamp}`;
 const count = await students.countDocuments({});
 if (count > 0) {
+  const backupName = `students_backup_${stamp}`;
   await students.aggregate([{ $match: {} }, { $out: backupName }]).toArray();
-  console.log(`\n백업 생성: ${backupName} (${count}건)`);
+  console.log(`\nBackup collection ${backupName} (${count} docs)`);
 }
 
-/* ---------------------------------------------------------------- 이관 */
+/* ---------------------------------------------------------------- import */
 if (mode === "replace") {
-  // Also wipes every student's password and selfEdited protection — students
-  // must set a new portal password after a --mode=replace import.
   const { deletedCount } = await students.deleteMany({});
-  console.log(`기존 ${deletedCount}건 삭제 (학생 비밀번호·자가수정 보호 항목도 함께 삭제됨)`);
+  console.log(`Deleted ${deletedCount} existing students (portal passwords included)`);
 }
 
-// A student may have edited nameKo/address/mobile themselves via Profile —
-// don't let the Excel import silently revert those fields.
+// A student may have corrected nameKo/address/mobile via Profile — never let
+// the import silently revert what they fixed.
 const selfEditedById = new Map(
   (
     await students
@@ -249,13 +343,22 @@ const ops = docs
       if (selfEdited[f]) continue;
       if (d[f] !== undefined && d[f] !== "") $set[f] = d[f];
     }
+    // Fields the sheet left blank are skipped above so a re-import never wipes
+    // what staff typed — but a brand new document still needs every key present,
+    // since the Student type treats them all as strings.
+    const blanks = {};
+    for (const f of ACADEMIC_FIELDS) if (!(f in $set)) blanks[f] = "";
+
     return {
       updateOne: {
         filter: { studentId: d.studentId },
         update: {
           $set,
           $setOnInsert: {
+            ...blanks,
             studentId: d.studentId,
+            // 신입생/재학생 is staff-owned after the first import (domain.ts)
+            studentType: d.studentType,
             tuition: { status: "미납", total: 0, term1: 0, term2: 0, term3: 0, term4: 0, note: "" },
             // shared/domain.ts 의 EMPTY_ATTENDANCE 와 같은 모양을 유지할 것 —
             // 이 필드가 빠지면 결석 구간 필터가 이 학생을 아예 찾지 못한다.
@@ -280,11 +383,11 @@ const ops = docs
   });
 
 if (ops.length === 0) {
-  console.log("\n처리할 행이 없습니다.");
+  console.log("\nNothing to write.");
 } else {
   const res = await students.bulkWrite(ops, { ordered: false });
-  console.log(`\n이관 완료 — 추가 ${res.upsertedCount}, 갱신 ${res.modifiedCount}`);
+  console.log(`\nDone — inserted ${res.upsertedCount}, updated ${res.modifiedCount}`);
 }
-console.log(`현재 DB 학생 수 ${await students.countDocuments({})}\n`);
+console.log(`Students now in DB ${await students.countDocuments({})}\n`);
 
 await client.close();

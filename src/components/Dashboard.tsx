@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
 import { StatCard } from "./StatCard";
-import { CONSULT_CATEGORIES, formatKRW, type Stats } from "../../shared/domain";
+import { ABSENCE_BUCKETS, CONSULT_CATEGORIES, formatKRW, type AbsenceBucketKey, type Stats } from "../../shared/domain";
 import { useDomainLabel } from "../i18n/domainLabels";
 
 /** The filter the students tab should open with when a card is clicked. */
@@ -17,6 +17,16 @@ const TONE_DOT: Record<ListTone, string> = {
   warning: "bg-warning",
   serious: "bg-serious",
   critical: "bg-critical",
+};
+
+/** 출결 구간(shared/domain.ts 의 ABSENCE_BUCKETS)별 카드 색 — 구간이 늘거나
+ * 줄어도 이 표만 맞춰 주면 된다. */
+const ABSENCE_TONE: Record<AbsenceBucketKey, ListTone> = {
+  good: "good",
+  a1: "warning",
+  a2: "serious",
+  a3: "serious",
+  a4: "critical",
 };
 
 type StatusRowData = { key: string; label: string; value: number; tone: ListTone; onClick: () => void };
@@ -135,8 +145,11 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
   return (
     <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6">
       {/* ------------------------------------------------------------ 전체 */}
-      <Section title={t("dashboard:sections.allStudents")} note={t("dashboard:sections.allStudentsNote")}>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <Section
+        title={t("dashboard:sections.allStudents")}
+        note={`${t("dashboard:sections.enrolledNote")} · ${t("dashboard:sections.allStudentsNote")}`}
+      >
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
           <StatCard
             label={t("dashboard:cards.allStudentsLabel")}
             value={total}
@@ -167,13 +180,23 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
             share={pct(countFor("대학원", "신입생"))}
             onClick={() => onDrill({ level: "대학원", studentType: "신입생" })}
           />
+          {/* 모집단 밖 — 휴학·제적·졸업·자퇴·삭제. 공유 비율(share)을 주지 않는
+              이유: 다른 카드의 비율은 재학생 총원 기준이라 여기 섞으면 뜻이
+              달라진다. 누르면 그 학생들만 담은 목록이 열린다. */}
+          <StatCard
+            muted
+            label={t("dashboard:cards.othersLabel")}
+            value={s.others}
+            sub={t("dashboard:cards.othersSub")}
+            onClick={() => onDrill({ scope: "others" })}
+          />
         </div>
       </Section>
 
       {/* ---------------------------------------------------------- 등록금 */}
       <Section
         title={t("dashboard:sections.tuition")}
-        note={`${t("dashboard:tuition.billed")} ${won(s.tuitionSums.billed)} · ${t("dashboard:tuition.collected")} ${won(s.tuitionSums.paid)} · ${t("dashboard:tuition.outstanding")} ${won(unpaidAmount)}`}
+        note={`${t("dashboard:sections.enrolledNote")} · ${t("dashboard:tuition.billed")} ${won(s.tuitionSums.billed)} · ${t("dashboard:tuition.collected")} ${won(s.tuitionSums.paid)} · ${t("dashboard:tuition.outstanding")} ${won(unpaidAmount)}`}
       >
         {(() => {
           const statusRows: StatusRowData[] = [
@@ -245,7 +268,7 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
       </Section>
 
       {/* ------------------------------------------------------------ 출결 */}
-      <Section title={t("dashboard:sections.attendance")}>
+      <Section title={t("dashboard:sections.attendance")} note={t("dashboard:sections.enrolledNote")}>
         <div className="mb-3 inline-flex rounded-lg border border-line bg-surface p-0.5 text-xs font-semibold">
           {(["all", "offline", "online"] as const).map((m) => (
             <button
@@ -266,41 +289,21 @@ export function Dashboard({ onDrill }: { onDrill: (filter: DrillFilter) => void 
             (absence.a4 > 0 ? t("dashboard:attendance.urgentNote") + " · " : "") +
             t(`dashboard:attendance.mode.${absenceMode}Subtitle`)
           }
-          rows={[
-            {
-              key: "good",
-              label: domain.absenceBucket("good"),
-              value: absence.good,
-              tone: "good",
-              onClick: () => onDrill(withMode({ absence: "good" }, absenceMode)),
-            },
-            {
-              key: "a1",
-              label: domain.absenceBucket("a1"),
-              value: absence.a1,
-              tone: "warning",
-              onClick: () => onDrill(withMode({ absence: "a1" }, absenceMode)),
-            },
-            {
-              key: "a23",
-              label: domain.absenceBucket("a23"),
-              value: absence.a23,
-              tone: "serious",
-              onClick: () => onDrill(withMode({ absence: "a23" }, absenceMode)),
-            },
-            {
-              key: "a4",
-              label: domain.absenceBucket("a4"),
-              value: absence.a4,
-              tone: "critical",
-              onClick: () => onDrill(withMode({ absence: "a4" }, absenceMode)),
-            },
-          ]}
+          rows={ABSENCE_BUCKETS.map((b) => ({
+            key: b.key,
+            label: domain.absenceBucket(b.key),
+            value: absence[b.key],
+            tone: ABSENCE_TONE[b.key],
+            onClick: () => onDrill(withMode({ absence: b.key }, absenceMode)),
+          }))}
         />
       </Section>
 
       {/* ------------------------------------------------------------ 상담 */}
-      <Section title={t("dashboard:sections.consultations")} note={t("dashboard:sections.consultationsNote")}>
+      <Section
+        title={t("dashboard:sections.consultations")}
+        note={`${t("dashboard:sections.enrolledNote")} · ${t("dashboard:sections.consultationsNote")}`}
+      >
         <div className="grid gap-3 lg:grid-cols-3">
           <div className="card p-4 lg:col-span-2">
             <ul className="space-y-2.5">

@@ -21,11 +21,23 @@ const dateStr = z
 /** Capped at 7 digits to match the input UI (TuitionCell) and to keep amounts
  * well inside Number's safe integer range. */
 const money = z.number().int().min(0).max(9_999_999);
-/** Digits only, up to 11 — matches the input UI's phone-number cap. */
+/** Digits only, up to 11 — matches the input UI's phone-number cap. Student login
+ * compares `mobile` against this exact shape, so it must stay a single number. */
 const phoneStr = z
   .string()
   .trim()
   .regex(/^\d{0,11}$/, "전화번호는 숫자 11자리 이하로 입력하세요.");
+
+/** `phone` holds every contact number the school has for a student (학사시스템 keeps
+ * them in three separate columns), joined with "/". Login never reads this field. */
+const phoneListStr = z
+  .string()
+  .trim()
+  .max(60)
+  .regex(
+    /^(\d{1,11}(\/\d{1,11})*)?$/,
+    "전화번호는 숫자 11자리 이하로, 여러 개는 / 로 구분해 입력하세요."
+  );
 
 export const tuitionSchema = z.object({
   status: z.enum(TUITION_STATUSES),
@@ -83,7 +95,7 @@ export const studentCreateSchema = z.object({
   admissionType: z.enum(ADMISSION_TYPES).or(z.literal("")).default("신입학"),
   nationality: str(60).default("우즈베키스탄"),
   address: str(400).default(""),
-  phone: phoneStr.default(""),
+  phone: phoneListStr.default(""),
   mobile: phoneStr.default(""),
   email: str(160).default(""),
   lastRegYear: str(10).default(""),

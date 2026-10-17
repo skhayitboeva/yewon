@@ -1,0 +1,41 @@
+{
+  "loading": "Dars jadvali yuklanmoqda…",
+  "loadError": "Dars jadvalini yuklab bo'lmadi.",
+  "term": "{{year}}-{{semester}}-semestr",
+  "ourStudentsOnly": "faqat bizning talabalar",
+  "counts": "bizdan {{ours}} / jami {{total}}",
+  "classCount": "{{count}} guruh",
+  "instructors": "O'qituvchilar",
+  "noRoom": "Xona belgilanmagan",
+  "noDay": "Kun belgilanmagan",
+  "noneOfOurs": "Bu guruhda bizning talabalarimiz yo'q.",
+  "showRoster": "Ro'yxatni ko'rsatish",
+  "hideRoster": "Ro'yxatni yopish",
+  "openInStudents": "Bu talabani talabalar bo'limida ochish",
+  "days": {
+    "월": "Dushanba",
+    "화": "Seshanba",
+    "수": "Chorshanba",
+    "목": "Payshanba",
+    "금": "Juma"
+  },
+  "empty": {
+    "title": "Hali guruhlar yo'q",
+    "body": "{{year}}-{{semester}}-semestr uchun guruhlarga taqsimlash ma'lumoti hali yo'q. Davomat ro'yxati va guruh taqsimoti fayllarini quyidagi buyruq bilan yuklang."
+  },
+  "filters": {
+    "level": "Daraja",
+    "allLevels": "Barcha darajalar",
+    "day": "Kun",
+    "allDays": "Barcha kunlar",
+    "class": "Guruh",
+    "allClasses": "Barcha guruhlar",
+    "room": "Xona",
+    "allRooms": "Barcha xonalar",
+    "allInstructors": "Barcha o'qituvchilar",
+    "searchPlaceholder": "Talabani ID yoki ism bo'yicha topish",
+    "clear": "Filtrlarni tozalash ({{count}})",
+    "result": "{{classes}} guruh · bizning {{students}} talaba",
+    "noMatch": "Bu filtrlarga mos guruh yo'q."
+  }
+}

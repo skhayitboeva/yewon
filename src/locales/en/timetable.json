@@ -1,0 +1,41 @@
+{
+  "loading": "Loading timetable…",
+  "loadError": "Could not load the timetable.",
+  "term": "{{year}}-{{semester}} semester",
+  "ourStudentsOnly": "our students only",
+  "counts": "{{ours}} of ours / {{total}} total",
+  "classCount": "{{count}} class(es)",
+  "instructors": "Instructors",
+  "noRoom": "Room TBD",
+  "noDay": "Day not given",
+  "noneOfOurs": "None of our students are in this class.",
+  "showRoster": "Show roster",
+  "hideRoster": "Hide roster",
+  "openInStudents": "Open this student in the students tab",
+  "days": {
+    "월": "Monday",
+    "화": "Tuesday",
+    "수": "Wednesday",
+    "목": "Thursday",
+    "금": "Friday"
+  },
+  "empty": {
+    "title": "No classes yet",
+    "body": "There is no class assignment data for the {{year}}-{{semester}} semester yet. Import the attendance roster and class-assignment files with the command below."
+  },
+  "filters": {
+    "level": "Level",
+    "allLevels": "All levels",
+    "day": "Day",
+    "allDays": "All days",
+    "class": "Class",
+    "allClasses": "All classes",
+    "room": "Room",
+    "allRooms": "All rooms",
+    "allInstructors": "All instructors",
+    "searchPlaceholder": "Find a student by ID or name",
+    "clear": "Clear filters ({{count}})",
+    "result": "{{classes}} class(es) · {{students}} of our students",
+    "noMatch": "No class matches these filters."
+  }
+}

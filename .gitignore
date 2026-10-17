@@ -7,6 +7,8 @@ dist
 *.log
 data/*.xlsx
 data/*.xls
+# 명부 대조 CSV — 이름·생년·전화번호가 들어 있다. 절대 커밋하지 않는다.
+data/*.csv
 data/import-report-*.json
 tsconfig.tsbuildinfo
 deno.lock

@@ -2,6 +2,7 @@
   "sections": {
     "allStudents": "Barcha talabalar",
     "allStudentsNote": "Talabalar ro'yxatini shu shart bilan ochish uchun kartani bosing",
+    "enrolledNote": "Faqat o'qiyotgan va qayta tiklangan talabalar",
     "tuition": "Kontrakt to'lovi",
     "attendance": "Davomat",
     "consultations": "Maslahatlar",
@@ -13,6 +14,8 @@
     "undergradNew": "Bakalavriat · Yangi ({{semester}})",
     "gradContinuing": "Magistratura · Davom etayotgan",
     "gradNew": "Magistratura · Yangi ({{semester}})",
+    "othersLabel": "Boshqalar",
+    "othersSub": "Hozir o'qimayotganlar",
     "semesterLabel": "{{year}}-{{term}}-semestr"
   },
   "tuition": {

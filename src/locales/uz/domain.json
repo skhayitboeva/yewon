@@ -53,7 +53,8 @@
   "absenceBucket": {
     "good": "Yaxshi (0 marta)",
     "a1": "1 marta yo'q",
-    "a23": "2–3 marta yo'q",
+    "a2": "2 marta yo'q",
+    "a3": "3 marta yo'q",
     "a4": "Bir fanda 4+ marta yo'q (F xavfi)"
   }
 }

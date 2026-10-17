@@ -26,6 +26,7 @@ export function StatCard({
   share,
   onClick,
   compact = false,
+  muted = false,
 }: {
   label: string;
   value: number | string;
@@ -36,6 +37,9 @@ export function StatCard({
   onClick?: () => void;
   /** Smaller padding/type — used where the card sits alongside a list row. */
   compact?: boolean;
+  /** 음영이 들어간 카드 — 옆 카드들과 같은 줄에 있지만 같은 모집단이 아니라는
+   * 표시다(대시보드의 "기타 학적"). 숫자 색까지 한 단계 낮춘다. */
+  muted?: boolean;
 }) {
   const body = (
     <>
@@ -47,7 +51,7 @@ export function StatCard({
       </div>
 
       <div
-        className={`nums font-extrabold leading-none ${TONE_TEXT[tone]} ${
+        className={`nums font-extrabold leading-none ${muted ? "text-ink2" : TONE_TEXT[tone]} ${
           compact ? "mt-1 text-lg" : "mt-2 text-[28px]"
         }`}
       >
@@ -70,14 +74,16 @@ export function StatCard({
   );
 
   const padding = compact ? "p-2.5" : "p-4";
+  // bg-plane 은 유틸리티라 .card 의 bg-surface 보다 뒤 레이어에서 이긴다.
+  const surface = muted ? "bg-plane" : "";
 
-  if (!onClick) return <div className={`card ${padding}`}>{body}</div>;
+  if (!onClick) return <div className={`card ${surface} ${padding}`}>{body}</div>;
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`card ${padding} text-left transition hover:border-rule hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/30`}
+      className={`card ${surface} ${padding} text-left transition hover:border-rule hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/30`}
     >
       {body}
     </button>

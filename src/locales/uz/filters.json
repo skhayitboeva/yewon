@@ -27,7 +27,8 @@
   },
   "attendance": {
     "label": "Davomat",
-    "all": "Barcha davomat holatlari"
+    "all": "Barcha davomat holatlari",
+    "selectedCount": "{{count}} ta tanlandi"
   },
   "absenceMode": {
     "label": "Fan",

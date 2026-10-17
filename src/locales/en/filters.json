@@ -27,7 +27,8 @@
   },
   "attendance": {
     "label": "Attendance",
-    "all": "All attendance"
+    "all": "All attendance",
+    "selectedCount": "{{count}} selected"
   },
   "absenceMode": {
     "label": "Course",

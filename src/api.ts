@@ -1,6 +1,7 @@
 import type {
   AccessRequest,
   AttendanceMode,
+  ClassGroupWithStudents,
   AttendanceMark,
   AttendanceTotals,
   Consultation,
@@ -121,6 +122,8 @@ export const api = {
     }),
 
   stats: () => request<Stats>("/api/stats"),
+  classes: () =>
+    request<{ year: number; semester: number; classes: ClassGroupWithStudents[] }>("/api/classes"),
   facets: () => request<{ majors: string[]; cohorts: string[] }>("/api/facets"),
 
   students: (query: string) => request<StudentPage>(`/api/students?${query}`),

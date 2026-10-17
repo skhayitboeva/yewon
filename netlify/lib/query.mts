@@ -1,5 +1,5 @@
 import type { Filter, Document } from "mongodb";
-import { ABSENCE_BUCKETS } from "../../shared/domain.ts";
+import { ABSENCE_BUCKETS, ENROLLED_STATUSES } from "../../shared/domain.ts";
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -88,6 +88,13 @@ export function buildStudentQuery(url: URL): ListParams {
     if (value) and.push({ [field]: value });
   }
 
+  // 탭이 정하는 모집단 — "전체 학생"(enrolled) 과 "기타"(others) 는 서로의 여집합이라
+  // 둘을 합치면 항상 전체가 된다. $nin 은 학적이 비어 있는 문서도 잡으므로
+  // 어느 쪽에도 안 들어가는 학생이 생기지 않는다.
+  const scope = p.get("scope");
+  if (scope === "enrolled") and.push({ enrollStatus: { $in: [...ENROLLED_STATUSES] } });
+  else if (scope === "others") and.push({ enrollStatus: { $nin: [...ENROLLED_STATUSES] } });
+
   const term = p.get("term");
   if (term && ["1", "2", "3", "4"].includes(term)) {
     and.push({ [`tuition.term${term}`]: { $gt: 0 } });
@@ -95,11 +102,16 @@ export function buildStudentQuery(url: URL): ListParams {
 
   const absence = p.get("absence");
   if (absence) {
-    const bucket = ABSENCE_BUCKETS.find((b) => b.key === absence);
-    if (bucket) {
-      const range: Record<string, number> = { $gte: bucket.min };
-      if (bucket.max !== null) range.$lte = bucket.max;
-      and.push({ [absenceField(p.get("absenceMode"))]: range });
+    const keys = absence.split(",").filter(Boolean);
+    const buckets = ABSENCE_BUCKETS.filter((b) => keys.includes(b.key));
+    if (buckets.length) {
+      const field = absenceField(p.get("absenceMode"));
+      const or = buckets.map((b) => {
+        const range: Record<string, number> = { $gte: b.min };
+        if (b.max !== null) range.$lte = b.max;
+        return { [field]: range };
+      });
+      and.push(or.length === 1 ? or[0] : { $or: or });
     }
   }
 

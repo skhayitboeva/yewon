@@ -1,0 +1,41 @@
+{
+  "loading": "시간표를 불러오는 중…",
+  "loadError": "시간표를 불러오지 못했습니다.",
+  "term": "{{year}}-{{semester}}학기",
+  "ourStudentsOnly": "우리 학생만 표시합니다",
+  "counts": "우리 학생 {{ours}}명 / 전체 {{total}}명",
+  "classCount": "{{count}}개 반",
+  "instructors": "교수",
+  "noRoom": "강의실 미정",
+  "noDay": "요일 미정",
+  "noneOfOurs": "이 반에는 우리 학생이 없습니다.",
+  "showRoster": "명단 보기",
+  "hideRoster": "명단 접기",
+  "openInStudents": "전체 학생 탭에서 이 학생 보기",
+  "days": {
+    "월": "월요일",
+    "화": "화요일",
+    "수": "수요일",
+    "목": "목요일",
+    "금": "금요일"
+  },
+  "empty": {
+    "title": "등록된 반이 없습니다",
+    "body": "{{year}}-{{semester}}학기 반배정 자료가 아직 없습니다. 학사에서 받은 출석명부와 반배정 명단을 아래 명령으로 넣어 주세요."
+  },
+  "filters": {
+    "level": "과정",
+    "allLevels": "전체 과정",
+    "day": "요일",
+    "allDays": "전체 요일",
+    "class": "반",
+    "allClasses": "전체 반",
+    "room": "강의실",
+    "allRooms": "전체 강의실",
+    "allInstructors": "전체 교수",
+    "searchPlaceholder": "학번 · 이름으로 학생 찾기",
+    "clear": "필터 지우기 ({{count}})",
+    "result": "{{classes}}개 반 · 우리 학생 {{students}}명",
+    "noMatch": "조건에 맞는 반이 없습니다."
+  }
+}

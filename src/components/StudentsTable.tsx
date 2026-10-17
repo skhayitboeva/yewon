@@ -14,7 +14,15 @@ import { AttendancePanel } from "./AttendanceGrid";
 import { COLUMNS, DEFAULT_VISIBLE, getPath, type ColumnDef } from "./columns";
 import { useUrlState } from "../hooks";
 import { filterStudents, paginate, sortStudents } from "../lib/studentFilter";
-import { type Role, type Student, type Tuition } from "../../shared/domain";
+import {
+  ENROLL_STATUSES,
+  ENROLLED_STATUSES,
+  isEnrolled,
+  type Role,
+  type Student,
+  type StudentScope,
+  type Tuition,
+} from "../../shared/domain";
 
 const PAGE_SIZES = [25, 50, 100, 200];
 
@@ -59,15 +67,23 @@ export function StudentsTable({
   onToast,
   initialFilter,
   role,
+  scope = "enrolled",
 }: {
   onToast: (kind: "ok" | "error", text: string) => void;
   initialFilter?: Record<string, string>;
   role: Role;
+  /** 탭이 정하는 모집단. FilterState 에 넣지 않는 이유 — "필터 지우기" 로 날아가면
+   * 안 되고, 활성 필터 개수에도 세어지면 안 되기 때문이다. */
+  scope?: StudentScope;
 }) {
   const canWrite = role === "admin";
   const { t } = useTranslation(["students", "common"]);
   const domain = useDomainLabel();
   const [state, setState] = useUrlState({ ...DEFAULTS, ...(initialFilter ?? {}) });
+  const enrollStatuses = useMemo<readonly string[]>(
+    () => (scope === "others" ? ENROLL_STATUSES.filter((v) => !isEnrolled(v)) : ENROLLED_STATUSES),
+    [scope]
+  );
   const [visible, setVisible] = useState<string[]>(DEFAULT_VISIBLE);
   const [showColumns, setShowColumns] = useState(false);
   const columnsRef = useRef<HTMLDivElement>(null);
@@ -94,6 +110,16 @@ export function StudentsTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.page, state.limit, state.sort, state.dir]);
 
+  // 필터는 URL 에 사는데 두 탭이 같은 URL 을 쓴다 — 다른 탭에서 고른 학적이
+  // 그대로 넘어오면 이 탭에는 나올 수 없는 값이라 결과가 0건인데 드롭다운에는
+  // 그 값이 없어 원인을 알 수 없다. 넘어온 값은 버린다.
+  useEffect(() => {
+    if (state.enrollStatus && !enrollStatuses.includes(state.enrollStatus)) {
+      setState({ enrollStatus: "", page: "1" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.enrollStatus, enrollStatuses]);
+
   useEffect(() => {
     if (!showColumns) return;
     function onOutside(e: MouseEvent) {
@@ -111,9 +137,11 @@ export function StudentsTable({
     for (const [key, value] of Object.entries(state)) {
       if (value && value !== "") params.set(key, value);
     }
+    // 서버 쪽 CSV 도 화면과 같은 모집단을 써야 행 수가 맞는다.
+    params.set("scope", scope);
     return params.toString();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(state)]);
+  }, [JSON.stringify(state), scope]);
 
   // The full roster is fetched once and cached; search/filter/sort/page all
   // run in memory against it instead of round-tripping per keystroke.
@@ -126,9 +154,9 @@ export function StudentsTable({
 
   const allRows = data?.rows ?? [];
   const filtered = useMemo(
-    () => filterStudents(allRows, filterOnly(state)),
+    () => filterStudents(allRows, { ...filterOnly(state), scope }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allRows, JSON.stringify(filterOnly(state))]
+    [allRows, JSON.stringify(filterOnly(state)), scope]
   );
   const sorted = useMemo(
     () => sortStudents(filtered, state.sort, state.dir),
@@ -234,7 +262,12 @@ export function StudentsTable({
 
   /* ---------------------------------------------------------------- render */
 
-  const exportHref = `/api/export.csv?${queryString}`;
+  // Export follows whatever columns are currently checked in the Columns
+  // picker, so hiding everything but Name/Tuition and exporting gives a
+  // CSV with just those two — not the server's full fixed field list.
+  const exportParams = new URLSearchParams(queryString);
+  exportParams.set("cols", cols.map((c) => c.key).join(","));
+  const exportHref = `/api/export.csv?${exportParams.toString()}`;
   const colLabel = (col: ColumnDef) => t(`students:columns.${col.labelKey}`);
 
   return (
@@ -246,10 +279,18 @@ export function StudentsTable({
           onReset={() => setState({ ...EMPTY_FILTERS, page: "1" })}
           total={total}
           exportHref={canWrite ? exportHref : undefined}
+          enrollStatuses={enrollStatuses}
         />
 
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-          {canWrite && (
+          {/* 기타 명부는 대시보드 카드로만 열리고 탭 이름이 없다 — 지금 보고 있는
+              모집단이 평소와 다르다는 것을 표에서 바로 알 수 있게 한다. */}
+          {scope === "others" && (
+            <span className="chip bg-[#eef3fa] text-brand">{t("students:toolbar.othersScope")}</span>
+          )}
+          {/* 새 학생은 학적이 "재학"으로 만들어지므로 기타 명부에서 추가하면
+              만든 즉시 목록에서 사라진다 — 거기서는 버튼을 숨긴다. */}
+          {canWrite && scope !== "others" && (
             <button className="btn btn-primary py-1" onClick={() => setAdding(true)}>
               + {t("students:toolbar.addStudent")}
             </button>

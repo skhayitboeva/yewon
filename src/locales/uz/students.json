@@ -32,6 +32,7 @@
   },
   "toolbar": {
     "addStudent": "Talaba qo'shish",
+    "othersScope": "Boshqalar ro'yxati (hozir o'qimayotganlar)",
     "columnsButton": "Ustunlar",
     "perPage": "Sahifada",
     "resetToDefault": "Standart",

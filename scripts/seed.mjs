@@ -71,6 +71,10 @@ await weeklyAttendance.createIndex(
 );
 await weeklyAttendance.createIndex({ year: 1, semester: 1 }, { name: "term" });
 
+const classes = db.collection("classes");
+await classes.createIndex({ year: 1, semester: 1 }, { name: "term" });
+await classes.createIndex({ level: 1, day: 1, name: 1 }, { name: "level_day_name" });
+
 console.log("인덱스 생성 완료");
 
 /* ------------------------------------------------------------------- data */

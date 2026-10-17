@@ -27,7 +27,8 @@
   },
   "attendance": {
     "label": "출결",
-    "all": "출결 전체"
+    "all": "출결 전체",
+    "selectedCount": "{{count}}개 선택됨"
   },
   "absenceMode": {
     "label": "과목",

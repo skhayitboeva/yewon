@@ -32,6 +32,7 @@
   },
   "toolbar": {
     "addStudent": "Add Student",
+    "othersScope": "Others roster (not currently enrolled)",
     "columnsButton": "Columns",
     "perPage": "Per page",
     "resetToDefault": "Default",

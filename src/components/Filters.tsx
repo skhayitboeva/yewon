@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "../api";
@@ -37,7 +37,8 @@ export const EMPTY_FILTERS: FilterState = {
   cohort: "",
 };
 
-function Select({
+/** 학생 표와 시간표가 같은 모양의 드롭다운을 쓴다. */
+export function Select({
   label,
   value,
   onChange,
@@ -67,6 +68,88 @@ function Select({
   );
 }
 
+/** Checkbox popover so more than one bucket (e.g. "1 absence" + "2 absences")
+ * can be picked at once — a native <select> only ever allows one. Selected
+ * keys are joined with "," in FilterState, same shape a plain string filter
+ * already takes on the wire (URL query param, CSV export). */
+function MultiSelect({
+  label,
+  values,
+  onChange,
+  options,
+  allLabel,
+  selectedCountLabel,
+}: {
+  label: string;
+  values: string[];
+  onChange: (v: string[]) => void;
+  options: readonly { value: string; label: string }[];
+  allLabel: string;
+  selectedCountLabel: (count: number) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, [open]);
+
+  function toggle(v: string) {
+    onChange(values.includes(v) ? values.filter((x) => x !== v) : [...values, v]);
+  }
+
+  const summary =
+    values.length === 0
+      ? allLabel
+      : values.length === 1
+        ? (options.find((o) => o.value === values[0])?.label ?? allLabel)
+        : selectedCountLabel(values.length);
+
+  return (
+    <div className="relative" ref={ref}>
+      <label className="flex items-center gap-1.5 text-xs font-semibold text-ink2">
+        <span className="sr-only sm:not-sr-only">{label}</span>
+        <button
+          type="button"
+          className="field w-40 truncate py-1 text-left"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-label={label}
+        >
+          {summary}
+        </button>
+      </label>
+      {open && (
+        <div className="absolute left-0 z-30 mt-1 w-56 rounded-xl border border-line bg-surface p-2 shadow-xl">
+          <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-plane">
+            <input type="checkbox" checked={values.length === 0} onChange={() => onChange([])} />
+            {allLabel}
+          </label>
+          {options.map((o) => (
+            <label
+              key={o.value}
+              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-plane"
+            >
+              <input
+                type="checkbox"
+                checked={values.includes(o.value)}
+                onChange={() => toggle(o.value)}
+              />
+              {o.label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const all = (label: string) => ({ value: "", label });
 const list = (values: readonly string[], translate: (v: string) => string = (v) => v) =>
   values.map((v) => ({ value: v, label: translate(v) }));
@@ -77,12 +160,16 @@ export function Filters({
   onReset,
   total,
   exportHref,
+  enrollStatuses = ENROLL_STATUSES,
 }: {
   filters: FilterState;
   onChange: (patch: Partial<FilterState>) => void;
   onReset: () => void;
   total: number;
   exportHref?: string;
+  /** 지금 탭에 나올 수 있는 학적만 드롭다운에 넣는다 — "기타" 탭에서 "재학"을
+   * 고르면 아무것도 안 나오는 막다른 선택을 없앤다. */
+  enrollStatuses?: readonly string[];
 }) {
   const { t } = useTranslation(["filters", "common"]);
   const domain = useDomainLabel();
@@ -135,7 +222,7 @@ export function Filters({
         label={t("filters:enrollStatus.label")}
         value={filters.enrollStatus}
         onChange={(v) => onChange({ enrollStatus: v })}
-        options={[all(t("filters:enrollStatus.all")), ...list(ENROLL_STATUSES, domain.enrollStatus)]}
+        options={[all(t("filters:enrollStatus.all")), ...list(enrollStatuses, domain.enrollStatus)]}
       />
       <Select
         label={t("filters:tuitionStatus.label")}
@@ -155,14 +242,13 @@ export function Filters({
           })),
         ]}
       />
-      <Select
+      <MultiSelect
         label={t("filters:attendance.label")}
-        value={filters.absence}
-        onChange={(v) => onChange({ absence: v })}
-        options={[
-          all(t("filters:attendance.all")),
-          ...ABSENCE_BUCKETS.map((b) => ({ value: b.key, label: domain.absenceBucket(b.key) })),
-        ]}
+        values={filters.absence ? filters.absence.split(",").filter(Boolean) : []}
+        onChange={(vals) => onChange({ absence: vals.join(",") })}
+        options={ABSENCE_BUCKETS.map((b) => ({ value: b.key, label: domain.absenceBucket(b.key) }))}
+        allLabel={t("filters:attendance.all")}
+        selectedCountLabel={(count) => t("filters:attendance.selectedCount", { count })}
       />
       <Select
         label={t("filters:absenceMode.label")}

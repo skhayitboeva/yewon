@@ -1,7 +1,7 @@
 /** Client-side equivalent of netlify/lib/query.mts's buildStudentQuery, run
  * against the full roster fetched once (see StudentsTable) instead of
  * round-tripping to Mongo on every keystroke. */
-import { ABSENCE_BUCKETS, cohortOf, type Student, type Tuition } from "../../shared/domain";
+import { ABSENCE_BUCKETS, cohortOf, isEnrolled, type Student, type Tuition } from "../../shared/domain";
 import { getPath } from "../components/columns";
 
 export function filterStudents(rows: Student[], filters: Record<string, string>): Student[] {
@@ -16,6 +16,9 @@ export function filterStudents(rows: Student[], filters: Record<string, string>)
     if (filters.studentType && s.studentType !== filters.studentType) return false;
     if (filters.major && s.major !== filters.major) return false;
     if (filters.enrollStatus && s.enrollStatus !== filters.enrollStatus) return false;
+    // 탭 모집단 — query.mts 의 scope 파라미터와 같은 기준.
+    if (filters.scope === "enrolled" && !isEnrolled(s.enrollStatus)) return false;
+    if (filters.scope === "others" && isEnrolled(s.enrollStatus)) return false;
     if (filters.tuitionStatus && s.tuition?.status !== filters.tuitionStatus) return false;
 
     if (filters.term && ["1", "2", "3", "4"].includes(filters.term)) {
@@ -24,8 +27,9 @@ export function filterStudents(rows: Student[], filters: Record<string, string>)
     }
 
     if (filters.absence) {
-      const bucket = ABSENCE_BUCKETS.find((b) => b.key === filters.absence);
-      if (bucket) {
+      const keys = filters.absence.split(",").filter(Boolean);
+      const buckets = ABSENCE_BUCKETS.filter((b) => keys.includes(b.key));
+      if (buckets.length) {
         const field =
           filters.absenceMode === "offline"
             ? "absencesOffline"
@@ -33,7 +37,8 @@ export function filterStudents(rows: Student[], filters: Record<string, string>)
               ? "absencesOnline"
               : "riskAbsences";
         const n = s.attendance?.[field] ?? 0;
-        if (n < bucket.min || (bucket.max !== null && n > bucket.max)) return false;
+        const matches = buckets.some((b) => n >= b.min && (b.max === null || n <= b.max));
+        if (!matches) return false;
       }
     }
 
